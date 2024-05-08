@@ -1,0 +1,4 @@
+build/
+
+# ignore all pycache
+**/__pycache__/
