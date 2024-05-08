@@ -19,7 +19,7 @@ void test_modify_matrix(float *matrix, int rows, int cols) {
     }
 }
 
-void get_pointcloud_limits(float *point_cloud, int point_dim, unsigned long num_points,
+void get_pointcloud_limits(float *point_cloud, short point_dim, unsigned long num_points,
                         float *max_x, float *max_y, float *max_z,
                         float *min_x, float *min_y, float *min_z) {
 
@@ -56,4 +56,24 @@ void get_pointcloud_limits(float *point_cloud, int point_dim, unsigned long num_
             *min_z = point_cloud[i*point_dim + 2];
         
     }
+}
+
+void estimate_voxel_size(unsigned long num_desired_voxels,
+                        float max_x, float max_y, float max_z,
+                        float min_x, float min_y, float min_z,
+                        float *voxel_size,
+                        int *len_x, int *len_y, int *len_z) {
+
+
+    // calculate the lengths in each dimension
+    float x_dim = max_x - min_x;
+    float y_dim = max_y - min_y;
+    float z_dim = max_z - min_z;
+
+    // calculate the voxel size
+    *voxel_size = (float) num_desired_voxels / x_dim;
+    *voxel_size /= y_dim;
+    *voxel_size /= z_dim;
+
+    *voxel_size = floor(*voxel_size);
 }
