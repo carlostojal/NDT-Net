@@ -19,3 +19,10 @@ void matmul(float *mat1, float *mat2, float *result,
         }
     }
 }
+
+void dot_product(float *vec1, float *vec2, float *result, int len) {
+    *result = 0;
+    for (int i = 0; i < len; i++) {
+        *result += vec1[i] * vec2[i];
+    }
+}
