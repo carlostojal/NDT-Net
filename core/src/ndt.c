@@ -126,7 +126,75 @@ void voxel_to_metric_space(unsigned int voxel_x, unsigned int voxel_y, unsigned 
 
 void *pcl_worker(void *arg) {
 
-    // TODO
+    // get the worker arguments
+    struct pcl_worker_args_t *args = (struct pcl_worker_args_t *) arg;
+
+    // get the point range for the worker from the worker id
+    unsigned long start = args->worker_id * (args->num_points/ NUM_PCL_WORKERS);
+    unsigned long end = (args->worker_id + 1) * (args->num_points / NUM_PCL_WORKERS);
+
+    // iterate over the points
+    for(unsigned long i = start; i < end; i++) {
+
+        // check if the point cloud is finished
+        if(i <= args->num_points)
+            break;
+
+        // get the voxel indexes for the point
+        unsigned int voxel_x, voxel_y, voxel_z;
+        if(metric_to_voxel_space(&args->point_cloud[i*3], args->voxel_size, args->len_x, args->len_y, args->len_z, &voxel_x, &voxel_y, &voxel_z) < 0) {
+            fprintf(stderr, "Error converting point to voxel space!\n");
+            return NULL;
+        }
+        unsigned long voxel_index = voxel_x * args->len_y * args->len_z + voxel_y * args->len_z + voxel_z;
+
+        // lock the mutex for the voxel
+        if(pthread_mutex_lock(&args->mutex_array[voxel_index]) != 0) {
+            fprintf(stderr, "Error locking distribution mutex: %s\n", strerror(errno));
+            return NULL;
+        }
+
+        // wait for the condition variable
+        while(args->nd_array[voxel_index].being_updated) {
+            if(pthread_cond_wait(&args->cond_array[voxel_index], &args->mutex_array[voxel_index]) != 0) {
+                fprintf(stderr, "Error waiting for condition variable: %s\n", strerror(errno));
+                return NULL;
+            }
+        }
+
+        // update the normal distribution for the voxel
+        args->nd_array[voxel_index].num_samples++;
+        for(int j = 0; j < 3; j++) {
+            // copy the old mean
+            args->nd_array[voxel_index].old_mean[j] = args->nd_array[voxel_index].mean[j];
+            // update the mean
+            args->nd_array[voxel_index].mean[j] += (args->point_cloud[i*3+j] - args->nd_array[voxel_index].mean[j]) / args->nd_array[voxel_index].num_samples;
+            // update the sum of squared differences for the variances
+            args->nd_array[voxel_index].m2[j] += (args->point_cloud[i*3+j] - args->nd_array[voxel_index].old_mean[j]) * (args->point_cloud[i*3+j] - args->nd_array[voxel_index].mean[j]);
+
+            // iterate the other dimensions to update the covariance matrix
+            for(int k = 0; k < 3; k++) {
+                // it's a diagonal, so it's a variance and not a covariance
+                if(j == k)
+                    continue;
+
+                // update the covariance matrix
+                args->nd_array[voxel_index].covariance[j*3+k] += (args->point_cloud[i*3+j] - args->nd_array[voxel_index].mean[j]) * (args->point_cloud[i*3+k] - args->nd_array[voxel_index].mean[k]) / args->nd_array[voxel_index].num_samples;            
+            }
+        }
+        
+        // unlock the mutex for the voxel
+        if(pthread_mutex_unlock(&args->mutex_array[voxel_index]) != 0) {
+            fprintf(stderr, "Error unlocking distribution mutex: %s\n", strerror(errno));
+            return NULL;
+        }
+
+        // signal the condition variable
+        if(pthread_cond_signal(&args->cond_array[voxel_index]) != 0) {
+            fprintf(stderr, "Error signaling condition variable: %s\n", strerror(errno));
+            return NULL;
+        }
+    }
 }
 
 
