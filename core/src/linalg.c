@@ -26,3 +26,10 @@ void dot_product(float *vec1, float *vec2, float *result, int len) {
         *result += vec1[i] * vec2[i];
     }
 }
+
+void trace(float *matrix, float *result, int len) {
+    *result = 0;
+    for (int i = 0; i < len; i++) {
+        *result += matrix[i * len + i];
+    }
+}
