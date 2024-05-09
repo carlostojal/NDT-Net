@@ -41,3 +41,36 @@ void transpose(float *matrix, float *result, int rows, int cols) {
         }
     }
 }
+
+void det(float *matrix, float *result, int len) {
+    if (len == 1) {
+        *result = matrix[0];
+        return;
+    }
+
+    if (len == 2) {
+        *result = matrix[0] * matrix[3] - matrix[1] * matrix[2];
+        return;
+    }
+
+    float *submatrix = (float *)malloc((len - 1) * (len - 1) * sizeof(float));
+    float subdet;
+    *result = 0;
+    for (int i = 0; i < len; i++) {
+        int subi = 0;
+        for (int j = 1; j < len; j++) {
+            int subj = 0;
+            for (int k = 0; k < len; k++) {
+                if (k == i) {
+                    continue;
+                }
+                submatrix[subi * (len - 1) + subj] = matrix[j * len + k];
+                subj++;
+            }
+            subi++;
+        }
+        det(submatrix, &subdet, len - 1);
+        *result += (i % 2 == 0 ? 1 : -1) * matrix[i] * subdet;
+    }
+    free(submatrix);
+}

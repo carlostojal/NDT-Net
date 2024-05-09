@@ -2,6 +2,7 @@
 #define LINALG_H_
 
 #include <stdio.h>
+#include <stdlib.h>
 
 /*! \brief Multiply two matrices.
     \param mat1 Pointer to the first matrix. Row-major order.
@@ -38,5 +39,12 @@ void trace(float *matrix, float *result, int len);
     \param cols Number of columns in the matrix.
 */
 void transpose(float *matrix, float *result, int rows, int cols);
+
+/*! \brief Calculate the determinant of a matrix. Using recursion and the Laplace expansion method.
+    \param matrix Pointer to the matrix. Row-major order.
+    \param result Pointer to the result.
+    \param len Length of the matrix.
+*/
+void det(float *matrix, float *result, int len);
 
 #endif // LINALG_H_
