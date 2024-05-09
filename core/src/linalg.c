@@ -33,3 +33,11 @@ void trace(float *matrix, float *result, int len) {
         *result += matrix[i * len + i];
     }
 }
+
+void transpose(float *matrix, float *result, int rows, int cols) {
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            result[j * rows + i] = matrix[i * cols + j];
+        }
+    }
+}
