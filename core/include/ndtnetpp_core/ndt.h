@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <pthread.h>
+#include <stdlib.h>
 #include <float.h>
 #include <math.h>
 #include <stdbool.h>
@@ -10,9 +11,25 @@
 #define PCL_DOWNSAMPLE_UPPER_THRESHOLD 0.2f // upper threshold percentage for the voxel grid downsampling
 
 struct normal_distribution_t {
-    float *mean; // xyz mean of the distribution (3-d)
-    float *covariance; // flattened covariance matrix (9-d)
+    float mean[3]; // xyz mean of the distribution (3-d)
+    float old_mean[3]; // last mean iteration (3-d)
+    float covariance[3]; // flattened covariance matrix (9-d)
+    float m2[3]; // sum of squared differences. used to compute variances
     long num_samples; // number of samples
+    bool being_updated; // flag to indicate if the distribution is being updated
+};
+
+struct pcl_worker_args_t {
+    float *point_cloud; // pointer to the point cloud
+    unsigned long num_points; // number of points in the point cloud
+    struct normal_distribution_t *nd_array; // pointer to the array of normal distributions
+    pthread_mutex_t *mutex_array; // pointer to the array of mutexes
+    pthread_cond_t *cond_array; // pointer to the array of condition variables
+    float voxel_size; // voxel size for distribution sampling
+    int len_x; // number of voxels in the "x" dimension
+    int len_y; // number of voxels in the "y" dimension
+    int len_z; // number of voxels in the "z" dimension
+    int worker_id; // worker id
 };
 
 /*! \brief Print a matrix to the standard output. 
@@ -94,6 +111,9 @@ void voxel_to_metric_space(unsigned int voxel_x, unsigned int voxel_y, unsigned 
                             int len_x, int len_y, int len_z,
                             float voxel_size, float *point);
 
+/*! \brief Worker routine for normal distribution update. */
+void *pcl_worker(void *arg);
+
 /*! \brief TODO: Estimate the normal distributions on the point cloud. Estimate a normal distribution per voxel of size "voxel_size".
     \param point_cloud Pointer to the point cloud.
     \param voxel_size Voxel size for distribution sampling.
@@ -101,7 +121,7 @@ void voxel_to_metric_space(unsigned int voxel_x, unsigned int voxel_y, unsigned 
     \param len_y Number of voxels in the "y" dimension.
     \param len_z Number of voxels in the "z" dimension.
 */
-int estimate_ndt(float *point_cloud, float voxel_size,
+int estimate_ndt(float *point_cloud, unsigned long num_points, float voxel_size,
                     int len_x, int len_y, int len_z);
 
 /*! \brief TODO: Downsample the input point cloud with NDT.
