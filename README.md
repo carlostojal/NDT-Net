@@ -9,10 +9,11 @@ The rest of the PointNet and PointNet++ architecture is as defined by the origin
 
 ## Setup
 
-### Requirements
-- Python
+### Dependencies
+- Python 3
 - PyTorch
-- Make and GCC
+- CMake, Make and GCC
+- GNU Scientific Library (GSL) (libgsl)
 
 ### Instructions
-TODO
+- Install the dependencies.
