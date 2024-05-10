@@ -9,7 +9,6 @@ find_package(GSL REQUIRED)
 add_library(ndtnetpp
     SHARED
     src/ndt.c
-    src/linalg.c
 )
 
 # set the include directory
