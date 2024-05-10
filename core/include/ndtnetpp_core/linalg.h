@@ -17,6 +17,14 @@
 void matmul(float *mat1, float *mat2, float *result, 
             int rows1, int cols1, int rows2, int cols2);
 
+/*! \brief Subtract two matrices.
+    \param mat1 Pointer to the first matrix. Row-major order.
+    \param mat2 Pointer to the second matrix. Row-major order.
+    \param result Pointer to the result matrix. Row-major order.
+    \param len Length of the matrices.
+*/
+void matsub(float *mat1, float *mat2, float *result, int rows, int cols);
+
 /*! \brief Dot product of two vectors.
     \param vec1 Pointer to the first vector.
     \param vec2 Pointer to the second vector.
