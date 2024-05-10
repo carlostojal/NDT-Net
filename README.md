@@ -9,10 +9,20 @@ The rest of the PointNet and PointNet++ architecture is as defined by the origin
 
 ## Setup
 
-### Requirements
-- Python
+### Dependencies
+- Python 3
 - PyTorch
-- Make and GCC
+- CMake, Make and GCC
+- GNU Scientific Library (GSL) (libgsl)
 
 ### Instructions
-TODO
+- Install the dependencies.
+
+## Future Work
+### NDT Core
+- [ ] Parallelize the most onerous loops.
+- [ ] Separate the code in multiple files.
+- [ ] Write unit tests.
+### PyTorch
+- [ ] Implement PointNet and PointNet++.
+- [ ] Integrate NDT into PointNet and PointNet++.

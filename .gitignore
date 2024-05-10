@@ -2,3 +2,4 @@ build/
 
 # ignore all pycache
 **/__pycache__/
+.vscode/
