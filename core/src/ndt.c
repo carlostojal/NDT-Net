@@ -388,6 +388,30 @@ void dk_divergence(struct normal_distribution_t *p, struct normal_distribution_t
     gsl_matrix_free(first_part);
 }
 
+double neighbor_divergence(unsigned long index, struct normal_distribution_t *nd_array, int len_x, int len_y, int len_z,
+                            short direction_x, short direction_y, short direction_z) {
+
+    if(index < 0 || index >= len_x * len_y * len_z) {
+        fprintf(stderr, "Invalid index for neighbor divergence!\n");
+        return -1;
+    }
+
+    // get the indexes of the neighbor
+    unsigned long neighbor_index = index + direction_x * len_y * len_z + direction_y * len_z + direction_z;
+
+    // check if the neighbor is outside the grid
+    if(neighbor_index < 0 || neighbor_index >= len_x * len_y * len_z) {
+        fprintf(stderr, "Neighbor outside the grid!\n");
+        return -2;
+    }
+
+    // calculate the divergence between the distributions
+    double divergence;
+    dk_divergence(&nd_array[index], &nd_array[neighbor_index], &divergence);
+
+    return divergence;
+}
+
 void collapse_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, int len_z, unsigned long num_desired_nds) {
 
     // compare the divergences in neighboring voxels
