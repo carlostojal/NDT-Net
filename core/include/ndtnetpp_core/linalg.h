@@ -14,7 +14,7 @@
     \param cols2 Number of columns in the second matrix.
 
 */
-void matmul(float *mat1, float *mat2, float *result, 
+int matmul(float *mat1, float *mat2, float *result, 
             int rows1, int cols1, int rows2, int cols2);
 
 /*! \brief Subtract two matrices.

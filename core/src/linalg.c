@@ -1,12 +1,12 @@
 #include <ndtnetpp_core/linalg.h>
 
-void matmul(float *mat1, float *mat2, float *result, 
+int matmul(float *mat1, float *mat2, float *result, 
             int rows1, int cols1, int rows2, int cols2) {
     
     // Check if the matrices can be multiplied
     if (cols1 != rows2) {
         fprintf(stderr, "Incompatible matrix shapes!\n");
-        return;
+        return -1;
     }
 
     // Perform matrix multiplication
@@ -18,6 +18,8 @@ void matmul(float *mat1, float *mat2, float *result,
             }
         }
     }
+
+    return 0;
 }
 
 void dot_product(float *vec1, float *vec2, float *result, int len) {
