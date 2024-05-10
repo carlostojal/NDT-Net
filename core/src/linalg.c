@@ -42,7 +42,7 @@ void transpose(float *matrix, float *result, int rows, int cols) {
     }
 }
 
-void det(float *matrix, float *result, int len) {
+int det(float *matrix, float *result, int len) {
     if (len == 1) {
         *result = matrix[0];
         return;
@@ -54,6 +54,10 @@ void det(float *matrix, float *result, int len) {
     }
 
     float *submatrix = (float *)malloc((len - 1) * (len - 1) * sizeof(float));
+    if(submatrix == NULL) {
+        fprintf(stderr, "Memory allocation failed!\n");
+        return -1;
+    }
     float subdet;
     *result = 0;
     for (int i = 0; i < len; i++) {
