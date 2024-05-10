@@ -523,5 +523,39 @@ void ndt_downsample(double *point_cloud, short point_dim, unsigned long num_poin
         return;
     }
 
-    // TODO: remove the distributions with the smallest divergence
+    // compute the divergences and remove the distributions with the smallest divergence
+    unsigned long num_valid_nds;
+    collapse_nds(nd_array, len_x, len_y, len_z, num_desired_points, &num_valid_nds);
+
+    // downsample the point cloud
+    unsigned long downsampled_index = 0;
+    for(int x = 0; x < len_x; x++) {
+        for(int y = 0; y < len_y; y++) {
+            for(int z = 0; z < len_z; z++) {
+
+                // get the index of the current voxel
+                unsigned long index = x * len_y * len_z + y * len_z + z;
+
+                // verify if the voxel has samples
+                if(nd_array[index].num_samples == 0)
+                    continue;
+
+                // get the point in metric space
+                double point[3];
+                voxel_to_metric_space(x, y, z, len_x, len_y, len_z, voxel_size, point);
+
+                // copy the point to the downsampled point cloud
+                for(int i = 0; i < 3; i++) {
+                    downsampled_point_cloud[downsampled_index*3 + i] = point[i];
+                }
+                downsampled_index++;
+            }
+        }
+    }
+
+    // free the normal distributions
+    free(nd_array);
+
+    // set the number of downsampled points
+    *num_downsampled_points = downsampled_index;
 }
