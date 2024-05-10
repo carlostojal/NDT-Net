@@ -17,6 +17,10 @@ The rest of the PointNet and PointNet++ architecture is as defined by the origin
 
 ### Instructions
 - Install the dependencies.
+- In the `core` subdirectory, create a `build` subdirectory and navigate there.
+- From that `build` subdirectory:
+    - Issue the command `cmake ..`;
+    - Issue the command `make`.
 
 ## Future Work
 ### NDT Core
