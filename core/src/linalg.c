@@ -45,12 +45,12 @@ void transpose(float *matrix, float *result, int rows, int cols) {
 int det(float *matrix, float *result, int len) {
     if (len == 1) {
         *result = matrix[0];
-        return;
+        return 0;
     }
 
     if (len == 2) {
         *result = matrix[0] * matrix[3] - matrix[1] * matrix[2];
-        return;
+        return 0;
     }
 
     float *submatrix = (float *)malloc((len - 1) * (len - 1) * sizeof(float));
@@ -77,6 +77,8 @@ int det(float *matrix, float *result, int len) {
         *result += (i % 2 == 0 ? 1 : -1) * matrix[i] * subdet;
     }
     free(submatrix);
+
+    return 0;
 }
 
 int inv(float *matrix, float *result, int len) {
