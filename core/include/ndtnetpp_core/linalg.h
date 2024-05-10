@@ -45,6 +45,13 @@ void transpose(float *matrix, float *result, int rows, int cols);
     \param result Pointer to the result.
     \param len Length of the matrix.
 */
-void det(float *matrix, float *result, int len);
+int det(float *matrix, float *result, int len);
+
+/*! \brief Calculate the inverse of a matrix. Using the determinant and the adjugate matrix.
+    \param matrix Pointer to the matrix. Row-major order.
+    \param result Pointer to the result matrix. Row-major order.
+    \param len Length of the matrix.
+*/
+int inv(float *matrix, float *result, int len);
 
 #endif // LINALG_H_
