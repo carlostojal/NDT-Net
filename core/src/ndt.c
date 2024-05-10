@@ -378,6 +378,14 @@ void dk_divergence(struct normal_distribution_t *p, struct normal_distribution_t
     // calculate the divergence
     *divergence = 0.5 * (*first_part_result + trace - log(q_det/p_det) - 3);
 
+    // free the allocated memory
+    gsl_matrix_free(p_LU);
+    gsl_matrix_free(q_LU);
+    gsl_matrix_free(mean_diff);
+    gsl_matrix_free(mean_diff_transpose);
+    gsl_matrix_free(q_inverse);
+    gsl_matrix_free(trace_matrix);
+    gsl_matrix_free(first_part);
 }
 
 void collapse_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, int len_z, unsigned long num_desired_nds) {
