@@ -442,6 +442,7 @@ void collapse_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, 
         return;
     }
 
+    // TODO: parallelize this loop
     // calculate the divergences between each pair of neighboring distributions
     for(int x = 1; x < len_x - 1; x++) {
         for(int y = 1; y < len_y - 1; y++) {
@@ -527,6 +528,7 @@ void ndt_downsample(double *point_cloud, short point_dim, unsigned long num_poin
     unsigned long num_valid_nds;
     collapse_nds(nd_array, len_x, len_y, len_z, num_desired_points, &num_valid_nds);
 
+    // TODO: parallelize this loop
     // downsample the point cloud
     unsigned long downsampled_index = 0;
     for(int x = 0; x < len_x; x++) {
