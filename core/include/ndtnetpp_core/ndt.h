@@ -12,10 +12,19 @@
 
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_linalg.h>
-#include <ndtnetpp_core/linalg.h>
 
 #define NUM_PCL_WORKERS 8 // number of workers for bulk point cloud processing tasks
 #define PCL_DOWNSAMPLE_UPPER_THRESHOLD 0.2f // upper threshold percentage for the voxel grid downsampling
+
+enum direction_t {
+    X_POS,
+    X_NEG,
+    Y_POS,
+    Y_NEG,
+    Z_POS,
+    Z_NEG,
+    DIRECTION_LEN
+};
 
 struct normal_distribution_t {
     double mean[3]; // xyz mean of the distribution (3-d)
@@ -147,19 +156,15 @@ int estimate_ndt(double *point_cloud, unsigned long num_points, double voxel_siz
 */
 void dk_divergence(struct normal_distribution_t *p, struct normal_distribution_t *q, double *divergence);
 
-/*! \brief TODO: Compute the multivariate Kullback-Leibler divergence between two normal distributions.
+/*! \brief Get the neighbor index in a given direction.
     \param index Index of the normal distribution in the array.
-    \param nd_array Pointer to the array of normal distributions.
     \param len_x Number of voxels in the "x" dimension.
     \param len_y Number of voxels in the "y" dimension.
     \param len_z Number of voxels in the "z" dimension.
-    \param direction_x Direction in the "x" dimension.
-    \param direction_y Direction in the "y" dimension.
-    \param direction_z Direction in the "z" dimension.
-    \return Divergence value.
+    \param direction Direction in the 3D space.
+    \return Neighbor index.
 */
-double neighbor_divergence(unsigned long index, struct normal_distribution_t *nd_array, int len_x, int len_y, int len_z,
-                            short direction_x, short direction_y, short direction_z);
+unsigned long get_neighbor_index(unsigned long index, int len_x, int len_y, int len_z, enum direction_t direction);
 
 /*! \brief Collapse normal distributions with small divergence until the desired number is reached.
     \param nd_array Pointer to the array of normal distributions.
@@ -169,9 +174,9 @@ double neighbor_divergence(unsigned long index, struct normal_distribution_t *nd
     \param num_desired_nds Number of desired normal distributions.
 */
 void collapse_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, int nel_z,
-                    unsigned long num_desired_nds);
+                    unsigned long num_desired_nds, unsigned long *num_valid_nds);
 
-/*! \brief TODO: Downsample the input point cloud with NDT.
+/*! \brief Downsample the input point cloud with NDT.
     \param point_cloud Pointer to the point cloud.
     \param point_dim Point dimension. (Example: 3 for xyz points).
     \param num_points Number of points in the input point cloud.

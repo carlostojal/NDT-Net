@@ -388,8 +388,7 @@ void dk_divergence(struct normal_distribution_t *p, struct normal_distribution_t
     gsl_matrix_free(first_part);
 }
 
-double neighbor_divergence(unsigned long index, struct normal_distribution_t *nd_array, int len_x, int len_y, int len_z,
-                            short direction_x, short direction_y, short direction_z) {
+unsigned long get_neighbor_index(unsigned long index, int len_x, int len_y, int len_z, enum direction_t direction) {
 
     if(index < 0 || index >= len_x * len_y * len_z) {
         fprintf(stderr, "Invalid index for neighbor divergence!\n");
@@ -397,28 +396,47 @@ double neighbor_divergence(unsigned long index, struct normal_distribution_t *nd
     }
 
     // get the indexes of the neighbor
-    unsigned long neighbor_index = index + direction_x * len_y * len_z + direction_y * len_z + direction_z;
-
-    // check if the neighbor is outside the grid
-    if(neighbor_index < 0 || neighbor_index >= len_x * len_y * len_z) {
-        fprintf(stderr, "Neighbor outside the grid!\n");
-        return -2;
+    short direction_x = 0;
+    short direction_y = 0;
+    short direction_z = 0;
+    switch(direction) {
+        case X_POS:
+            direction_x = 1;
+            break;
+        case Y_POS:
+            direction_y = 1;
+            break;
+        case Z_POS:
+            direction_z = 1;
+            break;
+        case X_NEG:
+            direction_x = -1;
+            break;
+        case Y_NEG:
+            direction_y = -1;
+            break;
+        case Z_NEG:
+            direction_z = -1;
+            break;
+        default:
+            fprintf(stderr, "Invalid direction for neighbor divergence!\n");
+            return -1;
     }
-
-    // calculate the divergence between the distributions
-    double divergence;
-    dk_divergence(&nd_array[index], &nd_array[neighbor_index], &divergence);
-
-    return divergence;
+    
+    return index + direction_x * len_y * len_z + direction_y * len_z + direction_z;
 }
 
-void collapse_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, int len_z, unsigned long num_desired_nds) {
+void collapse_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, int len_z,
+                    unsigned long num_desired_nds, unsigned long *num_valid_nds) {
 
     // compare the divergences in neighboring voxels
     // the distributions with the lowest divergence will be removed, because they introduce the least new information
 
+    *num_valid_nds = 0;
+
     // keep an ordered array of divergences
-    struct dk_divergence_t *divergences = (struct dk_divergence_t *) malloc(len_x * len_y * len_z * sizeof(struct dk_divergence_t));
+    unsigned long divergences_len = 0;
+    struct dk_divergence_t *divergences = (struct dk_divergence_t *) malloc(len_x * len_y * len_z * DIRECTION_LEN * sizeof(struct dk_divergence_t));
     if(divergences == NULL) {
         fprintf(stderr, "Error allocating memory for divergences: %s\n", strerror(errno));
         return;
@@ -429,10 +447,60 @@ void collapse_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, 
         for(int y = 1; y < len_y - 1; y++) {
             for(int z = 1; z < len_z - 1; z++) {
 
-                // TODO
+                // get the index of the current voxel
+                unsigned long index = x * len_y * len_z + y * len_z + z;
+
+                // verify if the voxel has samples
+                if(nd_array[index].num_samples == 0)
+                    continue;
+                *num_valid_nds++;
+
+                // calculate the divergence between the current voxel and the neighbors in each direction
+                for(short i = 0; i < DIRECTION_LEN; i++) {
+
+                    // get the neighbor index
+                    unsigned long neighbor_index = get_neighbor_index(index, len_x, len_y, len_z, i);
+                    if(neighbor_index < 0) {
+                        fprintf(stderr, "Error getting neighbor index!\n");
+                        return;
+                    }
+
+                    // verify if the other voxel has samples
+                    if(nd_array[neighbor_index].num_samples == 0)
+                        continue;
+                    
+                    // calculate the divergence between the distributions
+                    double div = 0;
+                    dk_divergence(&nd_array[index], &nd_array[neighbor_index], &div);
+
+                    // insert the divergence in the ordered array
+                    unsigned long j = 0;
+                    while(j < divergences_len && divergences[j].divergence < div) {
+                        j++;
+                    }
+                    // shift the divergences to the right
+                    for(unsigned long k = divergences_len; k > j; k--) {
+                        divergences[k] = divergences[k-1];
+                    }
+                    // insert the divergence
+                    divergences[j].divergence = div;
+                    divergences[j].p = &nd_array[index];
+                    divergences[j].q = &nd_array[neighbor_index];
+                    divergences_len++;
+                }
             }
         }
     }
+
+    // remove the distributions with the smallest divergence
+    for(unsigned long i = 0; i < *num_valid_nds - num_desired_nds; i++) {
+        // set the number of samples to 0
+        divergences[i].p->num_samples = 0;
+        *num_valid_nds--;
+    }
+
+    // free the divergences array
+    free(divergences);
 }
 
 void ndt_downsample(double *point_cloud, short point_dim, unsigned long num_points, unsigned long num_desired_points,
