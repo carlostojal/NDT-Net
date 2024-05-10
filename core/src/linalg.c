@@ -146,3 +146,12 @@ void matsub(float *mat1, float *mat2, float *result, int rows, int cols) {
         }
     }
 }
+
+void matadd(float *mat1, float *mat2, float *result, int rows, int cols) {
+
+    for(int i = 0; i < rows; i++) {
+        for(int j = 0; j < rows; j++) {
+            result[i * cols + j] = mat1[i * cols + j] + mat2[i * cols + j];
+        }
+    }
+}
