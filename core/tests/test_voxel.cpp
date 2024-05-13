@@ -87,3 +87,48 @@ TEST(VoxelTests, MetricToVoxelSpace3) {
     EXPECT_EQ(voxel_y, 2);
     EXPECT_EQ(voxel_z, 0);
 }
+
+TEST(VoxelTests, VoxelToMetricSpace) {
+    unsigned int voxel_x = 2;
+    unsigned int voxel_y = 1;
+    unsigned int voxel_z = 0;
+    int len_x = 5;
+    int len_y = 3;
+    int len_z = 1;
+    double voxel_size = 1.0;
+    double point[3];
+    voxel_to_metric_space(voxel_x, voxel_y, voxel_z, len_x, len_y, len_z, voxel_size, point);
+    EXPECT_DOUBLE_EQ(point[0], 0.0);
+    EXPECT_DOUBLE_EQ(point[1], 0.0);
+    EXPECT_DOUBLE_EQ(point[2], 0.0);
+}
+
+TEST(VoxelTests, VoxelToMetricSpace2) {
+    unsigned int voxel_x = 2;
+    unsigned int voxel_y = 2;
+    unsigned int voxel_z = 0;
+    int len_x = 5;
+    int len_y = 3;
+    int len_z = 1;
+    double voxel_size = 1.0;
+    double point[3];
+    voxel_to_metric_space(voxel_x, voxel_y, voxel_z, len_x, len_y, len_z, voxel_size, point);
+    EXPECT_DOUBLE_EQ(point[0], 0.0);
+    EXPECT_DOUBLE_EQ(point[1], 1.0);
+    EXPECT_DOUBLE_EQ(point[2], 0.0);
+}
+
+TEST(VoxelTests, VoxelToMetricSpace3) {
+    unsigned int voxel_x = 2;
+    unsigned int voxel_y = 2;
+    unsigned int voxel_z = 1;
+    int len_x = 5;
+    int len_y = 3;
+    int len_z = 2;
+    double voxel_size = 1.0;
+    double point[3];
+    voxel_to_metric_space(voxel_x, voxel_y, voxel_z, len_x, len_y, len_z, voxel_size, point);
+    EXPECT_DOUBLE_EQ(point[0], 0.0);
+    EXPECT_DOUBLE_EQ(point[1], 1.0);
+    EXPECT_DOUBLE_EQ(point[2], 0.5);
+}
