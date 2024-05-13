@@ -1,25 +1,6 @@
 #include <ndtnetpp_core/ndt.h>
 #include <ndtnetpp_core/pointclouds.h>
 
-void print_matrix(double *matrix, int rows, int cols) {
-    // Print matrix
-    for(int i = 0; i < rows; i++) {
-        for(int j = 0; j < cols; j++) {
-            printf("%f ", matrix[i*cols + j]);
-        }
-        printf("\n");
-    }
-}
-
-void test_modify_matrix(double *matrix, int rows, int cols) {
-    
-    for(int i = 0; i < rows; i++) {
-        for(int j = 0; j < cols; j++) {
-            matrix[i*cols + j] = matrix[i*cols + j] * 2;
-        }
-    }
-}
-
 void estimate_voxel_size(unsigned long num_desired_voxels,
                         double max_x, double max_y, double max_z,
                         double min_x, double min_y, double min_z,
