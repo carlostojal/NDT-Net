@@ -66,16 +66,6 @@ int estimate_ndt(double *point_cloud, unsigned long num_points, double voxel_siz
 */
 void dk_divergence(struct normal_distribution_t *p, struct normal_distribution_t *q, double *divergence);
 
-/*! \brief Get the neighbor index in a given direction.
-    \param index Index of the normal distribution in the array.
-    \param len_x Number of voxels in the "x" dimension.
-    \param len_y Number of voxels in the "y" dimension.
-    \param len_z Number of voxels in the "z" dimension.
-    \param direction Direction in the 3D space.
-    \return Neighbor index.
-*/
-unsigned long get_neighbor_index(unsigned long index, int len_x, int len_y, int len_z, enum direction_t direction);
-
 /*! \brief Collapse normal distributions with small divergence until the desired number is reached.
     \param nd_array Pointer to the array of normal distributions.
     \param len_x Number of voxels in the "x" dimension.

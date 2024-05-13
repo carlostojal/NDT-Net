@@ -266,44 +266,6 @@ void dk_divergence(struct normal_distribution_t *p, struct normal_distribution_t
     gsl_matrix_free(first_part);
 }
 
-unsigned long get_neighbor_index(unsigned long index, int len_x, int len_y, int len_z, enum direction_t direction) {
-
-    if(index < 0 || index >= len_x * len_y * len_z) {
-        fprintf(stderr, "Invalid index for neighbor divergence!\n");
-        return -1;
-    }
-
-    // get the indexes of the neighbor
-    short direction_x = 0;
-    short direction_y = 0;
-    short direction_z = 0;
-    switch(direction) {
-        case X_POS:
-            direction_x = 1;
-            break;
-        case Y_POS:
-            direction_y = 1;
-            break;
-        case Z_POS:
-            direction_z = 1;
-            break;
-        case X_NEG:
-            direction_x = -1;
-            break;
-        case Y_NEG:
-            direction_y = -1;
-            break;
-        case Z_NEG:
-            direction_z = -1;
-            break;
-        default:
-            fprintf(stderr, "Invalid direction for neighbor divergence!\n");
-            return -1;
-    }
-    
-    return index + direction_x * len_y * len_z + direction_y * len_z + direction_z;
-}
-
 void collapse_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, int len_z,
                     unsigned long num_desired_nds, unsigned long *num_valid_nds) {
 

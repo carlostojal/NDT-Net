@@ -88,4 +88,15 @@ void voxel_to_metric_space(unsigned int voxel_x, unsigned int voxel_y, unsigned 
                             int len_x, int len_y, int len_z,
                             double voxel_size, double *point);
 
+
+/*! \brief Get the neighbor index in a given direction.
+    \param index Index of the normal distribution in the array.
+    \param len_x Number of voxels in the "x" dimension.
+    \param len_y Number of voxels in the "y" dimension.
+    \param len_z Number of voxels in the "z" dimension.
+    \param direction Direction in the 3D space.
+    \return Neighbor index.
+*/
+unsigned long get_neighbor_index(unsigned long index, int len_x, int len_y, int len_z, enum direction_t direction);
+
 #endif // VOXEL_H_

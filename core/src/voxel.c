@@ -90,3 +90,41 @@ void voxel_to_metric_space(unsigned int voxel_x, unsigned int voxel_y, unsigned 
     point[1] = y_origin + voxel_y * voxel_size;
     point[2] = z_origin + voxel_z * voxel_size;
 }
+
+unsigned long get_neighbor_index(unsigned long index, int len_x, int len_y, int len_z, enum direction_t direction) {
+
+    if(index < 0 || index >= len_x * len_y * len_z) {
+        fprintf(stderr, "Invalid index for neighbor divergence!\n");
+        return -1;
+    }
+
+    // get the indexes of the neighbor
+    short direction_x = 0;
+    short direction_y = 0;
+    short direction_z = 0;
+    switch(direction) {
+        case X_POS:
+            direction_x = 1;
+            break;
+        case Y_POS:
+            direction_y = 1;
+            break;
+        case Z_POS:
+            direction_z = 1;
+            break;
+        case X_NEG:
+            direction_x = -1;
+            break;
+        case Y_NEG:
+            direction_y = -1;
+            break;
+        case Z_NEG:
+            direction_z = -1;
+            break;
+        default:
+            fprintf(stderr, "Invalid direction for neighbor divergence!\n");
+            return -1;
+    }
+    
+    return index + direction_x * len_y * len_z + direction_y * len_z + direction_z;
+}
