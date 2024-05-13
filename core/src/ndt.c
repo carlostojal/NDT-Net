@@ -1,4 +1,5 @@
 #include <ndtnetpp_core/ndt.h>
+#include <ndtnetpp_core/pointclouds.h>
 
 void print_matrix(double *matrix, int rows, int cols) {
     // Print matrix
@@ -16,45 +17,6 @@ void test_modify_matrix(double *matrix, int rows, int cols) {
         for(int j = 0; j < cols; j++) {
             matrix[i*cols + j] = matrix[i*cols + j] * 2;
         }
-    }
-}
-
-void get_pointcloud_limits(double *point_cloud, short point_dim, unsigned long num_points,
-                        double *max_x, double *max_y, double *max_z,
-                        double *min_x, double *min_y, double *min_z) {
-
-    *max_x = DBL_MIN;
-    *max_y = DBL_MIN;
-    *max_z = DBL_MIN;
-    *min_x = DBL_MAX;
-    *min_x = DBL_MAX;
-    *min_y = DBL_MAX;
-    *min_z = DBL_MAX;
-
-    // iterate over the points
-    for(unsigned long i = 0; i < num_points; i++) {
-
-        // verify the maximum x
-        if(point_cloud[i*point_dim] > *max_x)
-            *max_x = point_cloud[i*point_dim];
-        // verify the minimum x
-        if(point_cloud[i*point_dim] < *min_x)
-            *min_x = point_cloud[i*point_dim];
-
-        // verify the maximum y
-        if(point_cloud[i*point_dim + 1] > *max_y)
-            *max_y = point_cloud[i*point_dim + 1];
-        // verify the minimum y
-        if(point_cloud[i*point_dim + 1] < *min_y)
-            *min_y = point_cloud[i*point_dim + 1];
-
-        // verify the maximum z
-        if(point_cloud[i*point_dim + 2] > *max_z)
-            *max_z = point_cloud[i*point_dim + 2];
-        // verify the minimum z
-        if(point_cloud[i*point_dim + 2] < *min_z)
-            *min_z = point_cloud[i*point_dim + 2];
-        
     }
 }
 

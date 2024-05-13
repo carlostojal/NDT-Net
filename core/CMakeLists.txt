@@ -9,6 +9,7 @@ find_package(GSL REQUIRED)
 add_library(ndtnetpp
     SHARED
     src/ndt.c
+    src/pointclouds.c
 )
 
 # set the include directory

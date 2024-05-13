@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <stdlib.h>
-#include <float.h>
 #include <math.h>
 #include <stdbool.h>
 #include <errno.h>
@@ -53,36 +52,6 @@ struct dk_divergence_t {
     struct normal_distribution_t *p; // pointer to the first normal distribution
     struct normal_distribution_t *q; // pointer to the second normal distribution
 };
-
-/*! \brief Print a matrix to the standard output. 
-    \param matrix Pointer to the matrix. Row-major order.
-    \param rows Number of rows in the matrix.
-    \param cols Number of columns in the matrix.
-*/
-void print_matrix(double *matrix, int rows, int cols);
-
-/*! \brief Test matrix modification by reference. Doubles the matrix values. 
-    \param matrix Pointer to the matrix. Row-major order.
-    \param rows Number of rows in the matrix.
-    \param cols Number of columns in the matrix.
-*/
-void test_modify_matrix(double *matrix, int rows, int cols);
-
-/*! \brief Get the point cloud limits in each dimension. The values will be assigned by reference.
-    \param point_cloud Pointer to the point cloud.
-    \param point_dim Point dimension. (Example: 3 for xyz points).
-    \param num_points Number of points in the point cloud.
-    \param max_x Maximum value in the "x" dimension. Will be overwritten.
-    \param max_y Maximum value in the "y" dimension. Will be overwritten.
-    \param max_z Maximum value in the "z" dimension. Will be overwritten.
-    \param min_x Minimum value in the "x" dimension. Will be overwritten.
-    \param min_y Minimum value in the "y" dimension. Will be overwritten.
-    \param min_z Minimum value in the "z" dimension. Will be overwritten.
-*/
-void get_pointcloud_limits(double *point_cloud, short point_dim, unsigned long num_points, 
-                        double *max_x, double *max_y, double *max_z,
-                        double *min_x, double *min_y, double *min_z);
-
 
 /*! \brief Estimate voxel size for a number of desired points considering the limits.
     \param num_desired_voxels Number of desired voxels.
