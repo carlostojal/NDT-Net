@@ -15,16 +15,6 @@
 #define NUM_PCL_WORKERS 8 // number of workers for bulk point cloud processing tasks
 #define PCL_DOWNSAMPLE_UPPER_THRESHOLD 0.2f // upper threshold percentage for the voxel grid downsampling
 
-enum direction_t {
-    X_POS,
-    X_NEG,
-    Y_POS,
-    Y_NEG,
-    Z_POS,
-    Z_NEG,
-    DIRECTION_LEN
-};
-
 struct normal_distribution_t {
     double mean[3]; // xyz mean of the distribution (3-d)
     double old_mean[3]; // last mean iteration (3-d)
@@ -52,55 +42,6 @@ struct dk_divergence_t {
     struct normal_distribution_t *p; // pointer to the first normal distribution
     struct normal_distribution_t *q; // pointer to the second normal distribution
 };
-
-/*! \brief Estimate voxel size for a number of desired points considering the limits.
-    \param num_desired_voxels Number of desired voxels.
-    \param max_x Maximum value in the "x" dimension.
-    \param max_y Maximum value in the "y" dimension.
-    \param max_z Maximum value in the "z" dimension.
-    \param min_x Minimum value in the "x" dimension.
-    \param min_y Minimum value in the "y" dimension.
-    \param min_z Minimum value in the "z" dimension.
-    \param voxel_size Estimated voxel size.
-    \param len_x Number of voxels in the "x" dimension.
-    \param len_y Number of voxels in the "y" dimension.
-    \param len_z Number of voxels in the "z" dimension.
-*/
-void estimate_voxel_size(unsigned long num_desired_voxels,
-                        double max_x, double max_y, double max_z,
-                        double min_x, double min_y, double min_z,
-                        double *voxel_size,
-                        int *len_x, int *len_y, int *len_z);
-
-
-/*! \brief Convert a point from metric space to voxel space (indexes).
-    \param point Pointer to the point.
-    \param voxel_size Voxel size.
-    \param len_x Number of voxels in the "x" dimension.
-    \param len_y Number of voxels in the "y" dimension.
-    \param len_z Number of voxels in the "z" dimension.
-    \param voxel_x Voxel index in the "x" dimension. Will be overwritten.
-    \param voxel_y Voxel index in the "y" dimension. Will be overwritten.
-    \param voxel_z Voxel index in the "z" dimension. Will be overwritten.
-*/
-int metric_to_voxel_space(double *point, double voxel_size,
-                            int len_x, int len_y, int len_z,
-                            unsigned int *voxel_x, unsigned int *voxel_y, unsigned int *voxel_z);
-
-
-/*! \brief Convert a point from voxel space (indexes) to metric space.
-    \param voxel_x Voxel index in the "x" dimension.
-    \param voxel_y Voxel index in the "y" dimension.
-    \param voxel_z Voxel index in the "z" dimension.
-    \param len_x Number of voxels in the "x" dimension.
-    \param len_y Number of voxels in the "y" dimension.
-    \param len_z Number of voxels in the "z" dimension.
-    \param voxel_size Voxel size.
-    \param point Pointer to the point. Will be overwritten.
-*/
-void voxel_to_metric_space(unsigned int voxel_x, unsigned int voxel_y, unsigned int voxel_z,
-                            int len_x, int len_y, int len_z,
-                            double voxel_size, double *point);
 
 /*! \brief Worker routine for normal distribution update. */
 void *pcl_worker(void *arg);

@@ -10,6 +10,7 @@ add_library(ndtnetpp
     SHARED
     src/ndt.c
     src/pointclouds.c
+    src/voxel.c
 )
 
 # set the include directory
