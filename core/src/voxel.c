@@ -127,5 +127,6 @@ unsigned long get_neighbor_index(unsigned long index, int len_x, int len_y, int 
             return -1;
     }
     
-    return index + direction_x * len_y * len_z + direction_y * len_z + direction_z;
+    // calculate the neighbor index
+    return index + direction_z * len_x * len_y + direction_y * len_x + direction_x;
 }
