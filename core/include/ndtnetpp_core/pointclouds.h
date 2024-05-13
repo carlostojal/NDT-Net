@@ -28,6 +28,9 @@
 
 #include <float.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*! \brief Get the point cloud limits in each dimension. The values will be assigned by reference.
     \param point_cloud Pointer to the point cloud.
@@ -43,5 +46,9 @@
 void get_pointcloud_limits(double *point_cloud, short point_dim, unsigned long num_points, 
                         double *max_x, double *max_y, double *max_z,
                         double *min_x, double *min_y, double *min_z);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // POINTCLOUDS_H_

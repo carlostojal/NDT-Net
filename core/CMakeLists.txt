@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(ndtnetpp VERSION 0.1 LANGUAGES C)
+project(ndtnetpp VERSION 0.1 LANGUAGES C CXX)
 
 # find the GSL (GNU Scientific Library) package
 find_package(GSL REQUIRED)
+find_package(GTest REQUIRED) # for testing
 
 # declare the library
 add_library(ndtnetpp
@@ -13,8 +14,16 @@ add_library(ndtnetpp
     src/voxel.c
 )
 
+# declare the tests executable
+add_executable(tests
+    tests/test_pointclouds.cpp
+)
+
 # set the include directory
-include_directories(include)
+include_directories(include ${GSL_INCLUDE_DIRS} ${GTEST_INCLUDE_DIRS})
 
 # link the GSL library
 target_link_libraries(ndtnetpp GSL::gsl GSL::gslcblas)
+
+# link the tests executable
+target_link_libraries(tests GTest::gtest GTest::gtest_main ndtnetpp)
