@@ -48,6 +48,7 @@ void *pcl_worker(void *arg);
 
 /*! \brief Estimate the normal distributions on the point cloud. Estimate a normal distribution per voxel of size "voxel_size".
     \param point_cloud Pointer to the point cloud.
+    \param num_points Number of points in the point cloud.
     \param voxel_size Voxel size for distribution sampling.
     \param len_x Number of voxels in the "x" dimension.
     \param len_y Number of voxels in the "y" dimension.

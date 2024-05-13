@@ -350,10 +350,10 @@ void ndt_downsample(double *point_cloud, short point_dim, unsigned long num_poin
     double min_x, min_y, min_z;
     get_pointcloud_limits(point_cloud, point_dim, num_points, &max_x, &max_y, &max_z, &min_x, &min_y, &min_z);
 
-    // estimate the voxel size
+    // estimate the voxel size with an upper threshold
     double voxel_size;
     int len_x, len_y, len_z;
-    estimate_voxel_size(num_desired_points, max_x, max_y, max_z, min_x, min_y, min_z, &voxel_size, &len_x, &len_y, &len_z);
+    estimate_voxel_size(num_desired_points * (1 + PCL_DOWNSAMPLE_UPPER_THRESHOLD), max_x, max_y, max_z, min_x, min_y, min_z, &voxel_size, &len_x, &len_y, &len_z);
 
     // create a grid of normal distributions
     struct normal_distribution_t *nd_array;
