@@ -132,3 +132,30 @@ TEST(VoxelTests, VoxelToMetricSpace3) {
     EXPECT_DOUBLE_EQ(point[1], 1.0);
     EXPECT_DOUBLE_EQ(point[2], 0.5);
 }
+
+TEST(VoxelTests, GetNeighborIndexZPos) {
+    int len_x = 5;
+    int len_y = 3;
+    int len_z = 1;
+    unsigned long index = 7;
+    unsigned long neighbor_index = get_neighbor_index(index, len_x, len_y, len_z, Z_POS);
+    EXPECT_EQ(neighbor_index, 22);
+}
+
+TEST(VoxelTests, GetNeighborIndexYPos) {
+    int len_x = 5;
+    int len_y = 3;
+    int len_z = 1;
+    unsigned long index = 7;
+    unsigned long neighbor_index = get_neighbor_index(index, len_x, len_y, len_z, Y_POS);
+    EXPECT_EQ(neighbor_index, 12);
+}
+
+TEST(VoxelTests, GetNeighborIndexXPos) {
+    int len_x = 5;
+    int len_y = 3;
+    int len_z = 1;
+    unsigned long index = 7;
+    unsigned long neighbor_index = get_neighbor_index(index, len_x, len_y, len_z, X_POS);
+    EXPECT_EQ(neighbor_index, 8);
+}
