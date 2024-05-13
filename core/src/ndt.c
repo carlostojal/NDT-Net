@@ -1,6 +1,4 @@
 #include <ndtnetpp_core/ndt.h>
-#include <ndtnetpp_core/pointclouds.h>
-#include <ndtnetpp_core/voxel.h>
 
 void *pcl_worker(void *arg) {
 

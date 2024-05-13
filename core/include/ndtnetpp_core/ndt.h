@@ -3,11 +3,11 @@
 
 #include <stdio.h>
 #include <pthread.h>
-#include <stdlib.h>
-#include <math.h>
 #include <stdbool.h>
-#include <errno.h>
 #include <string.h>
+
+#include <ndtnetpp_core/pointclouds.h>
+#include <ndtnetpp_core/voxel.h>
 
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_linalg.h>
