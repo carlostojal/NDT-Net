@@ -196,7 +196,7 @@ int estimate_ndt(double *point_cloud, unsigned long num_points, double voxel_siz
     return 0;  
 }
 
-void dk_divergence(struct normal_distribution_t *p, struct normal_distribution_t *q, double *divergence) {
+void kl_divergence(struct normal_distribution_t *p, struct normal_distribution_t *q, double *divergence) {
 
     // calculate the divergence between two normal distributions
     // the divergence is the multivariate Kullback-Leibler divergence
@@ -276,7 +276,7 @@ void collapse_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, 
 
     // keep an ordered array of divergences
     unsigned long divergences_len = 0;
-    struct dk_divergence_t *divergences = (struct dk_divergence_t *) malloc(len_x * len_y * len_z * DIRECTION_LEN * sizeof(struct dk_divergence_t));
+    struct kl_divergence_t *divergences = (struct kl_divergence_t *) malloc(len_x * len_y * len_z * DIRECTION_LEN * sizeof(struct kl_divergence_t));
     if(divergences == NULL) {
         fprintf(stderr, "Error allocating memory for divergences: %s\n", strerror(errno));
         return;
@@ -312,7 +312,7 @@ void collapse_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, 
                     
                     // calculate the divergence between the distributions
                     double div = 0;
-                    dk_divergence(&nd_array[index], &nd_array[neighbor_index], &div);
+                    kl_divergence(&nd_array[index], &nd_array[neighbor_index], &div);
 
                     // insert the divergence in the ordered array
                     unsigned long j = 0;

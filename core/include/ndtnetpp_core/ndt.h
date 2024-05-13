@@ -37,7 +37,7 @@ struct pcl_worker_args_t {
     int worker_id; // worker id
 };
 
-struct dk_divergence_t {
+struct kl_divergence_t {
     double divergence; // divergence value
     struct normal_distribution_t *p; // pointer to the first normal distribution
     struct normal_distribution_t *q; // pointer to the second normal distribution
@@ -64,7 +64,7 @@ int estimate_ndt(double *point_cloud, unsigned long num_points, double voxel_siz
     \param q Pointer to the second normal distribution.
     \param divergence Pointer to the divergence value. Will be overwritten.
 */
-void dk_divergence(struct normal_distribution_t *p, struct normal_distribution_t *q, double *divergence);
+void kl_divergence(struct normal_distribution_t *p, struct normal_distribution_t *q, double *divergence);
 
 /*! \brief Collapse normal distributions with small divergence until the desired number is reached.
     \param nd_array Pointer to the array of normal distributions.
