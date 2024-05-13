@@ -87,9 +87,9 @@ void voxel_to_metric_space(unsigned int voxel_x, unsigned int voxel_y, unsigned 
     z_origin = -((double) len_z / 2) * voxel_size;
 
     // calculate the point in metric space
-    point[0] = x_origin + voxel_x * voxel_size;
-    point[1] = y_origin + voxel_y * voxel_size;
-    point[2] = z_origin + voxel_z * voxel_size;
+    point[0] = x_origin + voxel_x * voxel_size + voxel_size / 2;
+    point[1] = y_origin + voxel_y * voxel_size + voxel_size / 2;
+    point[2] = z_origin + voxel_z * voxel_size + voxel_size / 2;
 }
 
 unsigned long get_neighbor_index(unsigned long index, int len_x, int len_y, int len_z, enum direction_t direction) {
