@@ -17,6 +17,7 @@ add_library(ndtnetpp
 # declare the tests executable
 add_executable(tests
     tests/test_pointclouds.cpp
+    tests/test_voxel.cpp
 )
 
 # set the include directory

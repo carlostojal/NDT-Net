@@ -38,11 +38,12 @@ void estimate_voxel_size(unsigned long num_desired_voxels,
     double z_dim = max_z - min_z;
 
     // calculate the voxel size
-    *voxel_size = (double) num_desired_voxels / x_dim;
-    *voxel_size /= y_dim;
-    *voxel_size /= z_dim;
+    *voxel_size = cbrt((x_dim * y_dim * z_dim) / (double) num_desired_voxels);
 
-    *voxel_size = floor(*voxel_size);
+    // calculate the number of voxels in each dimension
+    *len_x = (int) x_dim / *voxel_size;
+    *len_y = (int) y_dim / *voxel_size;
+    *len_z = (int) z_dim / *voxel_size;
 }
 
 int metric_to_voxel_space(double *point, double voxel_size,

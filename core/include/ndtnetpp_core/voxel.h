@@ -39,6 +39,10 @@ enum direction_t {
     DIRECTION_LEN
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*! \brief Estimate voxel size for a number of desired points considering the limits.
     \param num_desired_voxels Number of desired voxels.
     \param max_x Maximum value in the "x" dimension.
@@ -98,5 +102,9 @@ void voxel_to_metric_space(unsigned int voxel_x, unsigned int voxel_y, unsigned 
     \return Neighbor index.
 */
 unsigned long get_neighbor_index(unsigned long index, int len_x, int len_y, int len_z, enum direction_t direction);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // VOXEL_H_
