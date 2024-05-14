@@ -49,6 +49,22 @@ TEST(VoxelTests, TestEstimateVoxelSize3) {
     EXPECT_EQ(len_z, 4);
 }
 
+TEST(VoxelTests, TestEstimateVoxelSize4) {
+    double max_x = 1.0;
+    double max_y = 1.0;
+    double max_z = 1.0;
+    double min_x = -1.0;
+    double min_y = -1.0;
+    double min_z = -1.0;
+    double voxel_size;
+    int len_x, len_y, len_z;
+    estimate_voxel_size(8 , max_x, max_y, max_z, min_x, min_y, min_z, &voxel_size, &len_x, &len_y, &len_z);
+    EXPECT_DOUBLE_EQ(voxel_size, 1);
+    EXPECT_EQ(len_x, 2);
+    EXPECT_EQ(len_y, 2);
+    EXPECT_EQ(len_z, 2);
+}
+
 TEST(VoxelTests, MetricToVoxelSpace) {
     double point[3] = {0.0, 0.0, 0.0};
     double voxel_size = 1.0;
@@ -138,7 +154,8 @@ TEST(VoxelTests, GetNeighborIndexZPos) {
     int len_y = 3;
     int len_z = 1;
     unsigned long index = 7;
-    unsigned long neighbor_index = get_neighbor_index(index, len_x, len_y, len_z, Z_POS);
+    unsigned long neighbor_index;
+    EXPECT_EQ(get_neighbor_index(index, len_x, len_y, len_z, Z_POS, &neighbor_index), 0);
     EXPECT_EQ(neighbor_index, 22);
 }
 
@@ -147,7 +164,8 @@ TEST(VoxelTests, GetNeighborIndexYPos) {
     int len_y = 3;
     int len_z = 1;
     unsigned long index = 7;
-    unsigned long neighbor_index = get_neighbor_index(index, len_x, len_y, len_z, Y_POS);
+    unsigned long neighbor_index;
+    EXPECT_EQ(get_neighbor_index(index, len_x, len_y, len_z, Y_POS, &neighbor_index), 0);
     EXPECT_EQ(neighbor_index, 12);
 }
 
@@ -156,6 +174,7 @@ TEST(VoxelTests, GetNeighborIndexXPos) {
     int len_y = 3;
     int len_z = 1;
     unsigned long index = 7;
-    unsigned long neighbor_index = get_neighbor_index(index, len_x, len_y, len_z, X_POS);
+    unsigned long neighbor_index;
+    EXPECT_EQ(get_neighbor_index(index, len_x, len_y, len_z, X_POS, &neighbor_index), 0);
     EXPECT_EQ(neighbor_index, 8);
 }
