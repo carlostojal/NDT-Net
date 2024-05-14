@@ -43,6 +43,10 @@ struct kl_divergence_t {
     struct normal_distribution_t *q; // pointer to the second normal distribution
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*! \brief Worker routine for normal distribution update. */
 void *pcl_worker(void *arg);
 
@@ -87,5 +91,9 @@ void collapse_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, 
  */
 void ndt_downsample(double *point_cloud, short point_dim, unsigned long num_points, unsigned long num_desired_points,
                     double *downsampled_point_cloud, unsigned long *num_downsampled_points);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // NDT_H_
