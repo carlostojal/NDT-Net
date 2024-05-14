@@ -38,12 +38,13 @@ void estimate_voxel_size(unsigned long num_desired_voxels,
     double z_dim = max_z - min_z;
 
     // calculate the voxel size
-    *voxel_size = cbrt((x_dim * y_dim * z_dim) / (double) num_desired_voxels);
+    double log_voxel_size = (log(x_dim) + log(y_dim) + log(z_dim) - log(num_desired_voxels)) / 3.0;
+    *voxel_size = exp(log_voxel_size);
 
     // calculate the number of voxels in each dimension
-    *len_x = (int) x_dim / *voxel_size;
-    *len_y = (int) y_dim / *voxel_size;
-    *len_z = (int) z_dim / *voxel_size;
+    *len_x = ceil(x_dim / *voxel_size);
+    *len_y = ceil(y_dim / *voxel_size);
+    *len_z = ceil(z_dim / *voxel_size);
 }
 
 int metric_to_voxel_space(double *point, double voxel_size,
@@ -67,7 +68,7 @@ int metric_to_voxel_space(double *point, double voxel_size,
     if(*voxel_x < 0 || *voxel_x >= len_x ||
         *voxel_y < 0 || *voxel_y >= len_y ||
         *voxel_z < 0 || *voxel_z >= len_z) {
-        fprintf(stderr, "Point outside the grid!\n");
+        fprintf(stderr, "Point %f %f %f outside the grid!\n", point[0], point[1], point[2]);
         return -1;
     }
 
