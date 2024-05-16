@@ -16,11 +16,12 @@
 #define PCL_DOWNSAMPLE_UPPER_THRESHOLD 0.2f // upper threshold percentage for the voxel grid downsampling
 
 struct normal_distribution_t {
+    unsigned long index; // index of the distribution
     double mean[3]; // xyz mean of the distribution (3-d)
     double old_mean[3]; // last mean iteration (3-d)
-    double covariance[3]; // flattened covariance matrix (9-d)
+    double covariance[9]; // flattened covariance matrix (9-d)
     double m2[3]; // sum of squared differences. used to compute variances
-    long num_samples; // number of samples
+    unsigned long num_samples; // number of samples
     bool being_updated; // flag to indicate if the distribution is being updated
 };
 
