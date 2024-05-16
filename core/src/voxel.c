@@ -93,7 +93,7 @@ void voxel_to_metric_space(unsigned int voxel_x, unsigned int voxel_y, unsigned 
     point[2] = z_origin + voxel_z * voxel_size;
 }
 
-int get_neighbor_index(unsigned long index, int len_x, int len_y, int len_z, enum direction_t direction, unsigned long *neighbor_index) {
+int get_neighbor_index(unsigned long index, unsigned int len_x, unsigned int len_y, unsigned int len_z, enum direction_t direction, unsigned long *neighbor_index) {
 
     if(index < 0 || index >= len_x * len_y * len_z) {
         fprintf(stderr, "Invalid index for neighbor divergence!\n");
@@ -128,17 +128,28 @@ int get_neighbor_index(unsigned long index, int len_x, int len_y, int len_z, enu
             return -2;
     }
 
-    long z_offset = direction_z * len_x * len_y;
-    long y_offset = direction_y * len_x;
-    long x_offset = direction_x;
-
-    if(x_offset > len_x * len_y * len_z || y_offset > len_x * len_y * len_z || z_offset > len_x * len_y * len_z) {
-        fprintf(stderr, "Offset larger than the number of voxels!\n");
+    // update the positions
+    unsigned int x, y, z;
+    if(index_to_voxel_pos(index, len_x, len_y, len_z, &x, &y, &z) < 0) {
+        fprintf(stderr, "Error getting neighbor voxel position!\n");
         return -3;
     }
-    
-    // calculate the neighbor index
-    *neighbor_index = index + x_offset + y_offset + z_offset;
+    x += direction_x;
+    y += direction_y;
+    z += direction_z;
+
+    if(x < 0 || x >= len_x ||
+        y < 0 || y >= len_y ||
+        z < 0 || z >= len_z) {
+        fprintf(stderr, "Neighbor voxel position outside the grid!\n");
+        return -4;
+    }
+
+    // get the index
+    if(voxel_pos_to_index(x, y, z, len_x, len_y, len_z, neighbor_index) < 0) {
+        fprintf(stderr, "Error getting index from voxel position!\n");
+        return -5;
+    }
 
     return 0;
 }
@@ -153,6 +164,20 @@ int voxel_pos_to_index(unsigned int voxel_x, unsigned int voxel_y, unsigned int 
     }
 
     *index = voxel_z * len_x * len_y + voxel_y * len_x + voxel_x;
+
+    return 0;
+}
+
+int index_to_voxel_pos(unsigned long index, int len_x, int len_y, int len_z, unsigned int *voxel_x, unsigned int *voxel_y, unsigned int *voxel_z) {
+
+    if(index < 0 || index >= len_x * len_y * len_z) {
+        fprintf(stderr, "Invalid index for voxel position!\n");
+        return -1;
+    }
+
+    *voxel_z = index / (len_x * len_y);
+    *voxel_y = (index % (len_x * len_y)) / len_x;
+    *voxel_x = index % len_x;
 
     return 0;
 }

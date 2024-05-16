@@ -102,7 +102,7 @@ void voxel_to_metric_space(unsigned int voxel_x, unsigned int voxel_y, unsigned 
     \param neighbor_index Neighbor index. Will be overwritten.
     \return Zero on success. A negative value on error.
 */
-int get_neighbor_index(unsigned long index, int len_x, int len_y, int len_z, enum direction_t direction, unsigned long *neighbor_index);
+int get_neighbor_index(unsigned long index, unsigned int len_x, unsigned int len_y, unsigned int len_z, enum direction_t direction, unsigned long *neighbor_index);
 
 /*! \brief Convert a voxel position in (x,y,z) to its sequential index in the array.
     \param voxel_x Voxel index in the "x" dimension.
@@ -114,6 +114,17 @@ int get_neighbor_index(unsigned long index, int len_x, int len_y, int len_z, enu
     \param index Index of the voxel in the array. Will be overwritten.
 */
 int voxel_pos_to_index(unsigned int voxel_x, unsigned int voxel_y, unsigned int voxel_z, int len_x, int len_y, int len_z, unsigned long *index);
+
+/*! \brief Convert a voxel index in the array to its position in (x,y,z).
+    \param index Index of the voxel in the array.
+    \param len_x Number of voxels in the "x" dimension.
+    \param len_y Number of voxels in the "y" dimension.
+    \param len_z Number of voxels in the "z" dimension.
+    \param voxel_x Voxel index in the "x" dimension. Will be overwritten.
+    \param voxel_y Voxel index in the "y" dimension. Will be overwritten.
+    \param voxel_z Voxel index in the "z" dimension. Will be overwritten.
+*/
+int index_to_voxel_pos(unsigned long index, int len_x, int len_y, int len_z, unsigned int *voxel_x, unsigned int *voxel_y, unsigned int *voxel_z);
 
 #ifdef __cplusplus
 }
