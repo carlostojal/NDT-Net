@@ -152,7 +152,7 @@ TEST(VoxelTests, VoxelToMetricSpace3) {
 TEST(VoxelTests, GetNeighborIndexZPos) {
     int len_x = 5;
     int len_y = 3;
-    int len_z = 1;
+    int len_z = 2;
     unsigned long index = 7;
     unsigned long neighbor_index;
     EXPECT_EQ(get_neighbor_index(index, len_x, len_y, len_z, Z_POS, &neighbor_index), 0);
