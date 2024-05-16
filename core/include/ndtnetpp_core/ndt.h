@@ -8,6 +8,7 @@
 
 #include <ndtnetpp_core/pointclouds.h>
 #include <ndtnetpp_core/voxel.h>
+#include <ndtnetpp_core/matrix.h>
 
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_linalg.h>
@@ -92,6 +93,12 @@ void collapse_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, 
  */
 void ndt_downsample(double *point_cloud, short point_dim, unsigned long num_points, unsigned long num_desired_points,
                     double *downsampled_point_cloud, unsigned long *num_downsampled_points);
+
+/*! \brief Print the normal distributions.
+    \param nd_array Pointer to the array of normal distributions.
+    \param num_nds Number of normal distributions.
+*/
+void print_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, int len_z);
 
 #ifdef __cplusplus
 }
