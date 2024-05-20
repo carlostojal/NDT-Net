@@ -27,7 +27,10 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
+#include <ndtnetpp_core/pointclouds.h>
+#include <float.h>
 
 enum direction_t {
     X_POS,
@@ -43,7 +46,7 @@ enum direction_t {
 extern "C" {
 #endif
 
-/*! \brief Estimate voxel size for a number of desired points considering the limits.
+/*! \brief Estimate voxel size for a number of desired points considering the limits. Also calculates the lengths in each dimension. Assumes the (0,0,0) metric point is within the limits.
     \param num_desired_voxels Number of desired voxels.
     \param max_x Maximum value in the "x" dimension.
     \param max_y Maximum value in the "y" dimension.

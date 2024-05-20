@@ -32,10 +32,10 @@ void estimate_voxel_size(unsigned long num_desired_voxels,
                         int *len_x, int *len_y, int *len_z) {
 
 
-    // calculate the lengths in each dimension
-    double x_dim = max_x - min_x;
-    double y_dim = max_y - min_y;
-    double z_dim = max_z - min_z;
+    // calculate the lengths in each dimension assuming (0,0,0) is at the center
+    double x_dim = maxf(max_x, absf(min_x)) * 2.0;
+    double y_dim = maxf(max_y, absf(min_y)) * 2.0;
+    double z_dim = maxf(max_z, absf(min_z)) * 2.0;
 
     // calculate the voxel size
     double log_voxel_size = (log(x_dim) + log(y_dim) + log(z_dim) - log(num_desired_voxels)) / 3.0;
@@ -45,6 +45,8 @@ void estimate_voxel_size(unsigned long num_desired_voxels,
     *len_x = ceil(x_dim / *voxel_size);
     *len_y = ceil(y_dim / *voxel_size);
     *len_z = ceil(z_dim / *voxel_size);
+
+    printf("Got grid with size [%d %d %d] and voxel size %f for lengths [%f %f %f].\n", *len_x, *len_y, *len_z, *voxel_size, x_dim, y_dim, z_dim);
 }
 
 int metric_to_voxel_space(double *point, double voxel_size,
@@ -65,10 +67,11 @@ int metric_to_voxel_space(double *point, double voxel_size,
     *voxel_z = (unsigned int) floor((point[2] - z_origin) / voxel_size);
 
     // check if the point is outside the grid
-    if(*voxel_x < 0 || *voxel_x >= len_x ||
-        *voxel_y < 0 || *voxel_y >= len_y ||
-        *voxel_z < 0 || *voxel_z >= len_z) {
-        fprintf(stderr, "Point %f %f %f outside the grid!\n", point[0], point[1], point[2]);
+    if(*voxel_x >= len_x ||
+        *voxel_y >= len_y ||
+        *voxel_z >= len_z) {
+        fprintf(stderr, "Point %f %f %f outside the grid! Got coordinates %d %d %d on a grid with len %d %d %d.\n", point[0], point[1], point[2]
+                        , *voxel_x, *voxel_y, *voxel_z, len_x, len_y, len_z);
         return -1;
     }
 
