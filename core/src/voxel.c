@@ -29,13 +29,14 @@ void estimate_voxel_size(unsigned long num_desired_voxels,
                         double max_x, double max_y, double max_z,
                         double min_x, double min_y, double min_z,
                         double *voxel_size,
-                        int *len_x, int *len_y, int *len_z) {
+                        int *len_x, int *len_y, int *len_z,
+                        double *x_offset, double *y_offset, double *z_offset) {
 
 
-    // calculate the lengths in each dimension assuming (0,0,0) is at the center
-    double x_dim = maxf(max_x, absf(min_x)) * 2.0;
-    double y_dim = maxf(max_y, absf(min_y)) * 2.0;
-    double z_dim = maxf(max_z, absf(min_z)) * 2.0;
+    // calculate the lengths in each dimension
+    double x_dim = max_x - min_x;
+    double y_dim = max_y - min_y;
+    double z_dim = max_z - min_z;
 
     // calculate the voxel size
     double log_voxel_size = (log(x_dim) + log(y_dim) + log(z_dim) - log(num_desired_voxels)) / 3.0;
@@ -46,25 +47,26 @@ void estimate_voxel_size(unsigned long num_desired_voxels,
     *len_y = ceil(y_dim / *voxel_size);
     *len_z = ceil(z_dim / *voxel_size);
 
-    printf("Got grid with size [%d %d %d] and voxel size %f for lengths [%f %f %f].\n", *len_x, *len_y, *len_z, *voxel_size, x_dim, y_dim, z_dim);
+    // calculate the offsets
+    // putting the center of the grid at the center of the metric space
+    *x_offset = min_x;
+    *y_offset = min_y;
+    *z_offset = min_z;
+
+    printf("Got grid with size [%d %d %d] and voxel size %f for lengths [%f %f %f] and offsets [%f %f %f].\n", *len_x, *len_y, *len_z, *voxel_size, 
+                                                                                                                x_dim, y_dim, z_dim,
+                                                                                                                *x_offset, *y_offset, *z_offset);
 }
 
 int metric_to_voxel_space(double *point, double voxel_size,
                             int len_x, int len_y, int len_z,
+                            double x_offset, double y_offset, double z_offset,
                             unsigned int *voxel_x, unsigned int *voxel_y, unsigned int *voxel_z) {
 
-    // the center voxel of the grid is at metric (0, 0, 0)
-
-    // find the origin of the grid in metric space
-    double x_origin, y_origin, z_origin;
-    x_origin = -((double) len_x / 2) * voxel_size;
-    y_origin = -((double) len_y / 2) * voxel_size;
-    z_origin = -((double) len_z / 2) * voxel_size;
-
     // calculate the voxel indexes
-    *voxel_x = (unsigned int) floor((point[0] - x_origin) / voxel_size);
-    *voxel_y = (unsigned int) floor((point[1] - y_origin) / voxel_size);
-    *voxel_z = (unsigned int) floor((point[2] - z_origin) / voxel_size);
+    *voxel_x = (unsigned int) floor((point[0] - x_offset) / voxel_size);
+    *voxel_y = (unsigned int) floor((point[1] - y_offset) / voxel_size);
+    *voxel_z = (unsigned int) floor((point[2] - z_offset) / voxel_size);
 
     // check if the point is outside the grid
     if(*voxel_x >= len_x ||
@@ -80,20 +82,13 @@ int metric_to_voxel_space(double *point, double voxel_size,
 
 void voxel_to_metric_space(unsigned int voxel_x, unsigned int voxel_y, unsigned int voxel_z,
                             int len_x, int len_y, int len_z,
+                            double x_offset, double y_offset, double z_offset,
                             double voxel_size, double *point) {
 
-    // the center voxel of the grid is at metric (0, 0, 0)
-
-    // find the origin of the grid in metric space
-    double x_origin, y_origin, z_origin;
-    x_origin = -((double) len_x / 2) * voxel_size + (voxel_size / 2);
-    y_origin = -((double) len_y / 2) * voxel_size + (voxel_size / 2);
-    z_origin = -((double) len_z / 2) * voxel_size + (voxel_size / 2);
-
     // calculate the point in metric space
-    point[0] = x_origin + voxel_x * voxel_size;
-    point[1] = y_origin + voxel_y * voxel_size;
-    point[2] = z_origin + voxel_z * voxel_size;
+    point[0] = (voxel_x * voxel_size) + (voxel_size / 2) + x_offset;
+    point[1] = (voxel_y * voxel_size) + (voxel_size / 2) + y_offset;
+    point[2] = (voxel_z * voxel_size) + (voxel_size / 2) + z_offset;
 }
 
 int get_neighbor_index(unsigned long index, unsigned int len_x, unsigned int len_y, unsigned int len_z, enum direction_t direction, unsigned long *neighbor_index) {
@@ -144,7 +139,7 @@ int get_neighbor_index(unsigned long index, unsigned int len_x, unsigned int len
     if(x < 0 || x >= len_x ||
         y < 0 || y >= len_y ||
         z < 0 || z >= len_z) {
-        fprintf(stderr, "Neighbor voxel position outside the grid!\n");
+        // fprintf(stderr, "Neighbor voxel position outside the grid!\n");
         return -4;
     }
 
