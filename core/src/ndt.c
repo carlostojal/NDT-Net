@@ -18,7 +18,10 @@ void *pcl_worker(void *arg) {
 
         // get the voxel indexes for the point
         unsigned int voxel_x, voxel_y, voxel_z;
-        if(metric_to_voxel_space(&args->point_cloud[i*3], args->voxel_size, args->len_x, args->len_y, args->len_z, &voxel_x, &voxel_y, &voxel_z) < 0) {
+        double x_offset = 0, y_offset = 0, z_offset = 0;
+        if(metric_to_voxel_space(&args->point_cloud[i*3], args->voxel_size, args->len_x, args->len_y, args->len_z, 
+                                args->x_offset, args->y_offset, args->z_offset,
+                                &voxel_x, &voxel_y, &voxel_z) < 0) {
             fprintf(stderr, "Error converting point to voxel space!\n");
             return NULL;
         }
@@ -44,6 +47,7 @@ void *pcl_worker(void *arg) {
 
         // update the normal distribution for the voxel
         args->nd_array[voxel_index].num_samples++;
+        // iterate the 3 dimensions of the point sample
         for(int j = 0; j < 3; j++) {
             // copy the old mean
             args->nd_array[voxel_index].old_mean[j] = args->nd_array[voxel_index].mean[j];
@@ -61,6 +65,11 @@ void *pcl_worker(void *arg) {
                 // update the covariance matrix
                 args->nd_array[voxel_index].covariance[j*3+k] += (args->point_cloud[i*3+j] - args->nd_array[voxel_index].mean[j]) * (args->point_cloud[i*3+k] - args->nd_array[voxel_index].mean[k]) / args->nd_array[voxel_index].num_samples;            
             }
+        }
+
+        // update the variances
+        for(int j = 0; j < 3; j++) {
+            args->nd_array[voxel_index].covariance[j*3+j] = args->nd_array[voxel_index].m2[j] / args->nd_array[voxel_index].num_samples;
         }
         
         // unlock the mutex for the voxel
@@ -80,6 +89,7 @@ void *pcl_worker(void *arg) {
 
 int estimate_ndt(double *point_cloud, unsigned long num_points, double voxel_size,
                     int len_x, int len_y, int len_z,
+                    double x_offset, double y_offset, double z_offset,
                     struct normal_distribution_t *nd_array) {
 
     for(int i = 0; i < len_x * len_y * len_z; i++) {
@@ -154,6 +164,9 @@ int estimate_ndt(double *point_cloud, unsigned long num_points, double voxel_siz
         args->len_x = len_x;
         args->len_y = len_y;
         args->len_z = len_z;
+        args->x_offset = x_offset;
+        args->y_offset = y_offset;
+        args->z_offset = z_offset;
         args->worker_id = i;
 
         if(pthread_create(&threads[i], NULL, pcl_worker, (void *) args) != 0) {
@@ -195,10 +208,24 @@ int estimate_ndt(double *point_cloud, unsigned long num_points, double voxel_siz
     return 0;  
 }
 
-void kl_divergence(struct normal_distribution_t *p, struct normal_distribution_t *q, double *divergence) {
+int kl_divergence(struct normal_distribution_t *p, struct normal_distribution_t *q, double *divergence) {
 
     // calculate the divergence between two normal distributions
     // the divergence is the multivariate Kullback-Leibler divergence
+
+    *divergence = 0;
+
+    /*
+    printf("CALCULATING DIVERGENCE BETWEEN %lu AND %lu\n", p->index, q->index);
+    print_nd(*p);
+    print_nd(*q);
+    printf("--------------------------------\n");
+    */
+
+    if(p->num_samples <= 1 || q->num_samples <= 1) {
+        // fprintf(stderr, "Not enough samples!\n");
+        return -1;
+    }
 
     // create GSL matrices from the covariance matrices
     gsl_matrix_view p_covariance = gsl_matrix_view_array(p->covariance, 3, 3);
@@ -210,13 +237,28 @@ void kl_divergence(struct normal_distribution_t *p, struct normal_distribution_t
     gsl_permutation *p_permutation = gsl_permutation_alloc(3);
     gsl_permutation *q_permutation = gsl_permutation_alloc(3);
     int p_signum, q_signum;
-    gsl_linalg_LU_decomp(&p_covariance.matrix, p_permutation, &p_signum);
-    gsl_linalg_LU_decomp(&q_covariance.matrix, q_permutation, &q_signum);
+    gsl_linalg_LU_decomp(&(p_covariance.matrix), p_permutation, &p_signum);
+    gsl_linalg_LU_decomp(&(q_covariance.matrix), q_permutation, &q_signum);
     gsl_permutation_free(p_permutation);
 
     // calculate the determinant of the covariance matrices
-    double p_det = gsl_linalg_LU_det(&p_covariance.matrix, p_signum);
-    double q_det = gsl_linalg_LU_det(&q_covariance.matrix, q_signum);
+    double p_det = gsl_linalg_LU_det(&(p_covariance.matrix), p_signum);
+    double q_det = gsl_linalg_LU_det(&(q_covariance.matrix), q_signum);
+
+    // check if the determinants are zero
+    if(p_det == 0 || q_det == 0) {
+        // fprintf(stderr, "The covariance matrix is singular!\n");
+        return -2;
+    }
+    // check if the matrices are invertible by the rank
+    if(gsl_linalg_LU_sgndet(&(p_covariance.matrix), p_signum) == 0 || gsl_linalg_LU_sgndet(&(q_covariance.matrix), q_signum) == 0) {
+        // fprintf(stderr, "The \"p\" covariance matrix is singular!\n");
+        return -2;
+    }
+    if(gsl_linalg_LU_sgndet(&(q_covariance.matrix), q_signum) == 0 || gsl_linalg_LU_sgndet(&(q_covariance.matrix), q_signum) == 0) {
+        // fprintf(stderr, "The \"q\"covariance matrix is singular!\n");
+        return -2;
+    }
 
     // calculate the difference between the means
     gsl_matrix *mean_diff = gsl_matrix_alloc(3, 1); // allocate the mean difference vector
@@ -263,6 +305,8 @@ void kl_divergence(struct normal_distribution_t *p, struct normal_distribution_t
     gsl_matrix_free(q_inverse);
     gsl_matrix_free(trace_matrix);
     gsl_matrix_free(first_part);
+
+    return 0;
 }
 
 void collapse_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, int len_z,
@@ -289,9 +333,8 @@ void collapse_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, 
     // debug the normal distributions
     // print_nds(nd_array, len_x, len_y, len_z);
 
-    // TODO: parallelize this loop
-    // TODO: consider dimensions with 1-2 voxels
     // calculate the divergences between each pair of neighboring distributions
+    #pragma omp parallel for
     for(int z = 0; z < len_z; z++) {
         for(int y = 0; y < len_y; y++) {
             for(int x = 0; x < len_x; x++) {
@@ -326,7 +369,10 @@ void collapse_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, 
                     
                     // calculate the divergence between the distributions
                     double div = 0;
-                    kl_divergence(&nd_array[index], &nd_array[neighbor_index], &div);
+                    if(kl_divergence(&nd_array[index], &nd_array[neighbor_index], &div) == -2) {
+                        // the q covariance matrix is singular
+                        continue;
+                    }
 
                     // insert the divergence in the ordered array
                     unsigned long j = 0;
@@ -374,7 +420,9 @@ void ndt_downsample(double *point_cloud, short point_dim, unsigned long num_poin
     // estimate the voxel size with an upper threshold
     double voxel_size;
     int len_x, len_y, len_z;
-    estimate_voxel_size((unsigned long) (num_desired_points * (1 + PCL_DOWNSAMPLE_UPPER_THRESHOLD)), max_x, max_y, max_z, min_x, min_y, min_z, &voxel_size, &len_x, &len_y, &len_z);
+    double x_offset, y_offset, z_offset;
+    estimate_voxel_size((unsigned long) (num_desired_points * (1 + PCL_DOWNSAMPLE_UPPER_THRESHOLD)), max_x, max_y, max_z, min_x, min_y, min_z, &voxel_size, &len_x, &len_y, &len_z,
+                        &x_offset, &y_offset, &z_offset);
 
     // create a grid of normal distributions
     struct normal_distribution_t *nd_array = NULL;
@@ -384,7 +432,7 @@ void ndt_downsample(double *point_cloud, short point_dim, unsigned long num_poin
         return;
     }
 
-    if(estimate_ndt(point_cloud, num_points, voxel_size, len_x, len_y, len_z, nd_array) < 0) {
+    if(estimate_ndt(point_cloud, num_points, voxel_size, len_x, len_y, len_z, x_offset, y_offset, z_offset, nd_array) < 0) {
         fprintf(stderr, "Error estimating normal distributions!\n");
         return;
     }
@@ -393,9 +441,9 @@ void ndt_downsample(double *point_cloud, short point_dim, unsigned long num_poin
     unsigned long num_valid_nds;
     collapse_nds(nd_array, len_x, len_y, len_z, num_desired_points, &num_valid_nds);
 
-    // TODO: parallelize this loop
     // downsample the point cloud
     unsigned long downsampled_index = 0;
+    #pragma omp parallel for
     for(int z = 0; z < len_z; z++) {
         for(int y = 0; y < len_y; y++) {
             for(int x = 0; x < len_x; x++) {
@@ -413,7 +461,7 @@ void ndt_downsample(double *point_cloud, short point_dim, unsigned long num_poin
 
                 // get the point in metric space
                 double point[3];
-                voxel_to_metric_space(x, y, z, len_x, len_y, len_z, voxel_size, point);
+                voxel_to_metric_space(x, y, z, len_x, len_y, len_z, x_offset, y_offset, z_offset, voxel_size, point);
 
                 // copy the point to the downsampled point cloud
                 for(int i = 0; i < 3; i++) {
@@ -431,6 +479,16 @@ void ndt_downsample(double *point_cloud, short point_dim, unsigned long num_poin
     *num_downsampled_points = downsampled_index;
 }
 
+void print_nd(struct normal_distribution_t nd) {
+
+    printf("Normal distribution %lu\n", nd.index);
+    printf("Number of samples: %lu\n", nd.num_samples);
+    printf("Mean: %f %f %f\n", nd.mean[0], nd.mean[1], nd.mean[2]);
+    printf("Covariance:\n");
+    print_matrix(nd.covariance, 3, 3);
+    printf("\n");
+}
+
 void print_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, int len_z) {
 
     unsigned int x, y, z;
@@ -440,11 +498,7 @@ void print_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, int
             fprintf(stderr, "Error getting voxel position!\n");
             return;
         }
-        printf("Normal distribution %d %d %d (%lu)\n", x, y, z, i);
-        printf("Number of samples: %lu\n", nd_array[i].num_samples);
-        printf("Mean: %f %f %f\n", nd_array[i].mean[0], nd_array[i].mean[1], nd_array[i].mean[2]);
-        printf("Covariance:\n");
-        print_matrix(nd_array[i].covariance, 3, 3);
+        print_nd(nd_array[i]);
         printf("Neighbor of:\n");
         for(short j = 0; j < DIRECTION_LEN; j++) {
             unsigned long n_index;

@@ -5,6 +5,7 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <string.h>
+#include <omp.h>
 
 #include <ndtnetpp_core/pointclouds.h>
 #include <ndtnetpp_core/voxel.h>
@@ -36,6 +37,9 @@ struct pcl_worker_args_t {
     int len_x; // number of voxels in the "x" dimension
     int len_y; // number of voxels in the "y" dimension
     int len_z; // number of voxels in the "z" dimension
+    double x_offset; // offset in the "x" dimension
+    double y_offset; // offset in the "y" dimension
+    double z_offset; // offset in the "z" dimension
     int worker_id; // worker id
 };
 
@@ -64,14 +68,16 @@ void *pcl_worker(void *arg);
 */
 int estimate_ndt(double *point_cloud, unsigned long num_points, double voxel_size,
                     int len_x, int len_y, int len_z,
+                    double x_offset, double y_offset, double z_offset,
                     struct normal_distribution_t *nd_array);
 
 /*! \brief Compute the multivariate Kullback-Leibler divergence between two normal distributions.
     \param p Pointer to the first normal distribution.
     \param q Pointer to the second normal distribution.
     \param divergence Pointer to the divergence value. Will be overwritten.
+    \return 0 if successful, -1 otherwise.
 */
-void kl_divergence(struct normal_distribution_t *p, struct normal_distribution_t *q, double *divergence);
+int kl_divergence(struct normal_distribution_t *p, struct normal_distribution_t *q, double *divergence);
 
 /*! \brief Collapse normal distributions with small divergence until the desired number is reached.
     \param nd_array Pointer to the array of normal distributions.
@@ -93,6 +99,11 @@ void collapse_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, 
  */
 void ndt_downsample(double *point_cloud, short point_dim, unsigned long num_points, unsigned long num_desired_points,
                     double *downsampled_point_cloud, unsigned long *num_downsampled_points);
+
+/*! \brief Print the normal distribution.
+    \param nd Normal distribution.
+*/
+void print_nd(struct normal_distribution_t nd);
 
 /*! \brief Print the normal distributions.
     \param nd_array Pointer to the array of normal distributions.
