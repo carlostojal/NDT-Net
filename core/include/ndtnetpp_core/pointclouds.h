@@ -26,11 +26,32 @@
 
  */
 
+#include <stdio.h>
 #include <float.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/*! \brief Get the maximum value between two doubles.
+    \param a First double.
+    \param b Second double.
+    \return The maximum value between the two doubles.
+*/
+double maxf(double a, double b);
+
+/*! \brief Get the minimum value between two doubles.
+    \param a First double.
+    \param b Second double.
+    \return The minimum value between the two doubles.
+*/
+double minf(double a, double b);
+
+/*! \brief Get the absolute of a double.
+    \param n Double.
+    \return The absolute of the double.
+*/
+double absf(double n);
 
 /*! \brief Get the point cloud limits in each dimension. The values will be assigned by reference.
     \param point_cloud Pointer to the point cloud.
