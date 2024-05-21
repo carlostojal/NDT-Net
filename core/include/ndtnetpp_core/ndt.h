@@ -29,12 +29,16 @@ struct normal_distribution_t {
     double covariance[9]; // flattened covariance matrix (9-d)
     double m2[3]; // sum of squared differences. used to compute variances
     unsigned long num_samples; // number of samples
+    unsigned short class; // most frequent class of the distribution
+    unsigned int *num_class_samples; // number of samples per class
     bool being_updated; // flag to indicate if the distribution is being updated
 };
 
 struct pcl_worker_args_t {
     double *point_cloud; // pointer to the point cloud
     unsigned long num_points; // number of points in the point cloud
+    unsigned short *classes; // pointer to the point classes
+    unsigned short num_classes;
     struct normal_distribution_t *nd_array; // pointer to the array of normal distributions
     pthread_mutex_t *mutex_array; // pointer to the array of mutexes
     pthread_cond_t *cond_array; // pointer to the array of condition variables
@@ -64,6 +68,8 @@ void *pcl_worker(void *arg);
 /*! \brief Estimate the normal distributions on the point cloud. Estimate a normal distribution per voxel of size "voxel_size".
     \param point_cloud Pointer to the point cloud.
     \param num_points Number of points in the point cloud.
+    \param classes Point classes array.
+    \param num_classes Number of classes.
     \param voxel_size Voxel size for distribution sampling.
     \param len_x Number of voxels in the "x" dimension.
     \param len_y Number of voxels in the "y" dimension.
@@ -71,7 +77,9 @@ void *pcl_worker(void *arg);
     \param nd_array Pointer to the array of normal distributions. Will be overwritten.
     \param num_nds Number of normal distributions. Will be overwritten.
 */
-int estimate_ndt(double *point_cloud, unsigned long num_points, double voxel_size,
+int estimate_ndt(double *point_cloud, unsigned long num_points, 
+                    unsigned short *classes, unsigned short num_classes,
+                    double voxel_size,
                     int len_x, int len_y, int len_z,
                     double x_offset, double y_offset, double z_offset,
                     struct normal_distribution_t *nd_array,
@@ -99,12 +107,17 @@ void collapse_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, 
     \param point_cloud Pointer to the point cloud.
     \param point_dim Point dimension. (Example: 3 for xyz points).
     \param num_points Number of points in the input point cloud.
+    \param classes Point classes array.
     \param num_desired_points Number of desired points after sampling.
     \param downsampled_point_cloud Pointer to the downsampled point cloud. Will be overwritten.
     \param num_downsampled_points Number of points in the downsampled point cloud. Will be overwritten.
  */
-void ndt_downsample(double *point_cloud, short point_dim, unsigned long num_points, unsigned long num_desired_points,
-                    double *downsampled_point_cloud, unsigned long *num_downsampled_points);
+void ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long num_points, 
+                    unsigned short *classes, unsigned short num_classes,
+                    unsigned long num_desired_points,
+                    double *downsampled_point_cloud, unsigned long *num_downsampled_points,
+                    double *covariances,
+                    unsigned short *downsampled_classes);
 
 /*! \brief Print the normal distribution.
     \param nd Normal distribution.

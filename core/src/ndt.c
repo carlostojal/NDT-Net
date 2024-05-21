@@ -71,6 +71,23 @@ void *pcl_worker(void *arg) {
         for(int j = 0; j < 3; j++) {
             args->nd_array[voxel_index].covariance[j*3+j] = args->nd_array[voxel_index].m2[j] / args->nd_array[voxel_index].num_samples;
         }
+
+        // update the class if classes were provided
+        if(args->classes != NULL) {
+            // get the class of the point
+            unsigned short point_class = args->classes[i];
+            // update the class of the distribution
+            args->nd_array[voxel_index].num_class_samples[point_class]++;
+
+            // find the most frequent class
+            unsigned int max_class_samples = 0;
+            for(unsigned short j = 0; j <= args->num_classes; j++) {
+                if(args->nd_array[voxel_index].num_class_samples[j] > max_class_samples) {
+                    max_class_samples = args->nd_array[voxel_index].num_class_samples[j];
+                    args->nd_array[voxel_index].class = j;
+                }
+            }
+        }
         
         // unlock the mutex for the voxel
         if(pthread_mutex_unlock(&args->mutex_array[voxel_index]) != 0) {
@@ -87,7 +104,9 @@ void *pcl_worker(void *arg) {
 }
 
 
-int estimate_ndt(double *point_cloud, unsigned long num_points, double voxel_size,
+int estimate_ndt(double *point_cloud, unsigned long num_points,
+                    unsigned short *classes, unsigned short num_classes,
+                    double voxel_size,
                     int len_x, int len_y, int len_z,
                     double x_offset, double y_offset, double z_offset,
                     struct normal_distribution_t *nd_array,
@@ -99,6 +118,16 @@ int estimate_ndt(double *point_cloud, unsigned long num_points, double voxel_siz
         // initialize the normal distributions
         nd_array[i].num_samples = 0;
         nd_array[i].index = i;
+        nd_array[i].num_class_samples = NULL;
+        // if classes were provided, allocate memory for the number of samples per class
+        // initialize with zeross
+        if(classes != NULL) {
+            nd_array[i].num_class_samples = (unsigned int *) calloc((num_classes + 1), sizeof(unsigned int));
+            if(nd_array[i].num_class_samples == NULL) {
+                fprintf(stderr, "Error allocating memory for class samples: %s\n", strerror(errno));
+                return -1;
+            }
+        }
         for(int j = 0; j < 3; j++) {
             nd_array[i].mean[j] = 0;
             nd_array[i].m2[j] = 0;
@@ -147,7 +176,7 @@ int estimate_ndt(double *point_cloud, unsigned long num_points, double voxel_siz
     }
 
     // create an array of worker arguments
-    struct pcl_worker_args_t *args_array = (struct pcl_worker_args_t *) malloc(NUM_PCL_WORKERS * sizeof(struct pcl_worker_args_t));
+    struct pcl_worker_args_t *args_array = (struct pcl_worker_args_t *) calloc(NUM_PCL_WORKERS, sizeof(struct pcl_worker_args_t));
     if(args_array == NULL) {
         fprintf(stderr, "Error allocating memory for worker arguments: %s\n", strerror(errno));
         return -8;
@@ -160,6 +189,8 @@ int estimate_ndt(double *point_cloud, unsigned long num_points, double voxel_siz
         struct pcl_worker_args_t *args = &args_array[i];
         args->point_cloud = point_cloud;
         args->num_points = num_points;
+        args->classes = classes;
+        args->num_classes = num_classes;
         args->nd_array = nd_array;
         args->mutex_array = mutex_array;
         args->cond_array = cond_array;
@@ -429,8 +460,12 @@ void collapse_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, 
     free(divergences);
 }
 
-void ndt_downsample(double *point_cloud, short point_dim, unsigned long num_points, unsigned long num_desired_points,
-                    double *downsampled_point_cloud, unsigned long *num_downsampled_points) {
+void ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long num_points,
+                    unsigned short *classes, unsigned short num_classes,
+                    unsigned long num_desired_points,
+                    double *downsampled_point_cloud, unsigned long *num_downsampled_points,
+                    double *covariances,
+                    unsigned short *downsampled_classes) {
 
     // get the point cloud limits
     double max_x, max_y, max_z;
@@ -463,7 +498,7 @@ void ndt_downsample(double *point_cloud, short point_dim, unsigned long num_poin
             return;
         }
 
-        if(estimate_ndt(point_cloud, num_points, guess, len_x, len_y, len_z, x_offset, y_offset, z_offset, nd_array, &num_nds) < 0) {
+        if(estimate_ndt(point_cloud, num_points, classes, num_classes, guess, len_x, len_y, len_z, x_offset, y_offset, z_offset, nd_array, &num_nds) < 0) {
             fprintf(stderr, "Error estimating normal distributions!\n");
             return;
         }
@@ -496,7 +531,7 @@ void ndt_downsample(double *point_cloud, short point_dim, unsigned long num_poin
     unsigned long num_valid_nds;
     collapse_nds(nd_array, len_x, len_y, len_z, num_desired_points, &num_valid_nds);
 
-    // downsample the point cloud
+    // downsample the point cloud, iterating the voxels
     unsigned long downsampled_index = 0;
     #pragma omp parallel for
     for(int z = 0; z < len_z; z++) {
@@ -522,12 +557,21 @@ void ndt_downsample(double *point_cloud, short point_dim, unsigned long num_poin
                 for(int i = 0; i < 3; i++) {
                     downsampled_point_cloud[downsampled_index*3 + i] = point[i];
                 }
+                // copy the covariance matrix
+                memcpy(&covariances[downsampled_index*9], nd_array[index].covariance, 9 * sizeof(double));
+                // copy the class
+                if(classes != NULL) {
+                    downsampled_classes[downsampled_index] = nd_array[index].class;
+                }
+
                 downsampled_index++;
             }
         }
     }
 
     // free the normal distributions
+    // free the classes count pointer
+    free(nd_array->num_class_samples);
     free(nd_array);
 
     // set the number of downsampled points
