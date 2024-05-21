@@ -468,17 +468,18 @@ void ndt_downsample(double *point_cloud, short point_dim, unsigned long num_poin
             return;
         }
 
-        // adjust the number of desired points with binary search
+        // adjust the voxel size guess limits for binary search
         if(num_nds > num_desired_points * (1+DOWNSAMPLE_UPPER_THRESHOLD)) {
             min_guess = guess;
-            guess = min_guess + (max_guess - min_guess) / 2.0;
         } else if(num_nds < num_desired_points) {
             max_guess = guess;
-            guess = min_guess + (max_guess - min_guess) / 2.0;
         } else {
             // reached a valid number of normal distributions
             break;
         }
+
+        // get the next guess
+        guess = min_guess + (max_guess - min_guess) / 2.0;
 
         iter++;
 
