@@ -15,7 +15,12 @@
 #include <gsl/gsl_linalg.h>
 
 #define NUM_PCL_WORKERS 8 // number of workers for bulk point cloud processing tasks
-#define PCL_DOWNSAMPLE_UPPER_THRESHOLD 0.2f // upper threshold percentage for the voxel grid downsampling
+#define DOWNSAMPLE_UPPER_THRESHOLD 0.2 // upper threshold for downsampled point cloud size
+#define MIN_POINTS_GUESS 1 // minumum number of points to guess the number of normal distributions
+#define MAX_POINTS_GUESS 1000000 // maximum number of points to guess the number of normal distributions
+#define MIN_VOXEL_GUESS 0.05 // minimum voxel size guess
+#define MAX_VOXEL_GUESS 5.0 // maximum voxel size guess
+#define MAX_GUESS_ITERATIONS 10 // maximum number of iterations to guess the number of normal distributions
 
 struct normal_distribution_t {
     unsigned long index; // index of the distribution
@@ -69,7 +74,8 @@ void *pcl_worker(void *arg);
 int estimate_ndt(double *point_cloud, unsigned long num_points, double voxel_size,
                     int len_x, int len_y, int len_z,
                     double x_offset, double y_offset, double z_offset,
-                    struct normal_distribution_t *nd_array);
+                    struct normal_distribution_t *nd_array,
+                    unsigned long *num_nds);
 
 /*! \brief Compute the multivariate Kullback-Leibler divergence between two normal distributions.
     \param p Pointer to the first normal distribution.

@@ -90,7 +90,10 @@ void *pcl_worker(void *arg) {
 int estimate_ndt(double *point_cloud, unsigned long num_points, double voxel_size,
                     int len_x, int len_y, int len_z,
                     double x_offset, double y_offset, double z_offset,
-                    struct normal_distribution_t *nd_array) {
+                    struct normal_distribution_t *nd_array,
+                    unsigned long *num_nds) {
+
+    *num_nds = 0;
 
     for(int i = 0; i < len_x * len_y * len_z; i++) {
         // initialize the normal distributions
@@ -185,10 +188,17 @@ int estimate_ndt(double *point_cloud, unsigned long num_points, double voxel_siz
 
     // destroy the mutexes
     // destroy distribution mutexes
-    for(int i = 0; i < len_x * len_y * len_z; i++) {
+    for(unsigned long i = 0; i < len_x * len_y * len_z; i++) {
         if(pthread_mutex_destroy(&mutex_array[i]) < 0) {
             fprintf(stderr, "Error destroying distribution mutex: %s\n", strerror(errno));
             return -7;
+        }
+    }
+
+    // count the number of normal distributions
+    for(unsigned long i = 0; i < len_x * len_y * len_z; i++) {
+        if(nd_array[i].num_samples > 0) {
+            (*num_nds)++;
         }
     }
 
@@ -395,15 +405,25 @@ void collapse_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, 
         }
     }
 
+    // remove the distributions with the smallest divergence until the desired number is reached
+    unsigned int to_remove = *num_valid_nds - num_desired_nds;
+    unsigned long idx_to_remove = 0;
+
     // remove the distributions with the smallest divergence
     if(*num_valid_nds > num_desired_nds) {
-        for(unsigned long i = 0; i < *num_valid_nds - num_desired_nds; i++) {
-            if(i >= divergences_len)
-                break;
+        for(unsigned long i = 0; i < to_remove; idx_to_remove++) {
+            // if it was already removed or has no samples, pick another
+            if(divergences[idx_to_remove].p->num_samples == 0) {
+                continue;
+            }
             // set the number of samples to 0
-            divergences[i].p->num_samples = 0;
+            divergences[idx_to_remove].p->num_samples = 0;
+            (*num_valid_nds)--;
+            i++;
         }
     }
+
+
 
     // free the divergences array
     free(divergences);
@@ -417,23 +437,57 @@ void ndt_downsample(double *point_cloud, short point_dim, unsigned long num_poin
     double min_x, min_y, min_z;
     get_pointcloud_limits(point_cloud, point_dim, num_points, &max_x, &max_y, &max_z, &min_x, &min_y, &min_z);
 
-    // estimate the voxel size with an upper threshold
+    // estimate the voxel size
     double voxel_size;
     int len_x, len_y, len_z;
     double x_offset, y_offset, z_offset;
-    estimate_voxel_size((unsigned long) (num_desired_points * (1 + PCL_DOWNSAMPLE_UPPER_THRESHOLD)), max_x, max_y, max_z, min_x, min_y, min_z, &voxel_size, &len_x, &len_y, &len_z,
-                        &x_offset, &y_offset, &z_offset);
 
     // create a grid of normal distributions
     struct normal_distribution_t *nd_array = NULL;
-    nd_array = (struct normal_distribution_t *) malloc(len_x * len_y * len_z * sizeof(struct normal_distribution_t));
-    if(nd_array == NULL) {
-        fprintf(stderr, "Error allocating memory for normal distributions: %s\n", strerror(errno));
-        return;
-    }
 
-    if(estimate_ndt(point_cloud, num_points, voxel_size, len_x, len_y, len_z, x_offset, y_offset, z_offset, nd_array) < 0) {
-        fprintf(stderr, "Error estimating normal distributions!\n");
+    double guess = (double) (MAX_VOXEL_GUESS - MIN_VOXEL_GUESS) / 2.0;
+    double min_guess = MIN_VOXEL_GUESS;
+    double max_guess = MAX_VOXEL_GUESS;
+
+    unsigned long num_nds;
+    unsigned int iter = 0;
+    do {
+
+        estimate_voxel_grid(max_x, max_y, max_z, min_x, min_y, min_z, guess, &len_x, &len_y, &len_z,
+                            &x_offset, &y_offset, &z_offset);
+
+        // allocate the normal distributions
+        nd_array = (struct normal_distribution_t *) realloc(nd_array, len_x * len_y * len_z * sizeof(struct normal_distribution_t));
+        if(nd_array == NULL) {
+            fprintf(stderr, "Error allocating memory for normal distributions: %s\n", strerror(errno));
+            return;
+        }
+
+        if(estimate_ndt(point_cloud, num_points, guess, len_x, len_y, len_z, x_offset, y_offset, z_offset, nd_array, &num_nds) < 0) {
+            fprintf(stderr, "Error estimating normal distributions!\n");
+            return;
+        }
+
+        // adjust the number of desired points with binary search
+        if(num_nds > num_desired_points * (1+DOWNSAMPLE_UPPER_THRESHOLD)) {
+            min_guess = guess;
+            guess = min_guess + (max_guess - min_guess) / 2.0;
+        } else if(num_nds < num_desired_points) {
+            max_guess = guess;
+            guess = min_guess + (max_guess - min_guess) / 2.0;
+        } else {
+            // reached a valid number of normal distributions
+            break;
+        }
+
+        iter++;
+
+    } while(iter < MAX_GUESS_ITERATIONS);
+
+    voxel_size = guess;
+
+    if(iter == MAX_GUESS_ITERATIONS) {
+        fprintf(stderr, "Reached maximum number of iterations!\n");
         return;
     }
 
@@ -477,6 +531,8 @@ void ndt_downsample(double *point_cloud, short point_dim, unsigned long num_poin
 
     // set the number of downsampled points
     *num_downsampled_points = downsampled_index;
+
+    // print_matrix(downsampled_point_cloud, *num_downsampled_points, 3);
 }
 
 void print_nd(struct normal_distribution_t nd) {
