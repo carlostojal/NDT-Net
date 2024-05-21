@@ -58,6 +58,28 @@ void estimate_voxel_size(unsigned long num_desired_voxels,
                                                                                                                 *x_offset, *y_offset, *z_offset);
 }
 
+void estimate_voxel_grid(double max_x, double max_y, double max_z,
+                        double min_x, double min_y, double min_z,
+                        double voxel_size,
+                        int *len_x, int *len_y, int *len_z,
+                        double *x_offset, double *y_offset, double *z_offset) {
+
+    // calculate the lengths in each dimension
+    double x_dim = max_x - min_x;
+    double y_dim = max_y - min_y;
+    double z_dim = max_z - min_z;
+
+    // calculate the number of voxels in each dimension
+    *len_x = ceil(x_dim / voxel_size);
+    *len_y = ceil(y_dim / voxel_size);
+    *len_z = ceil(z_dim / voxel_size);
+
+    // assign the offsets
+    *x_offset = min_x;
+    *y_offset = min_y;
+    *z_offset = min_z;
+}
+
 int metric_to_voxel_space(double *point, double voxel_size,
                             int len_x, int len_y, int len_z,
                             double x_offset, double y_offset, double z_offset,

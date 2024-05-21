@@ -66,6 +66,15 @@ void estimate_voxel_size(unsigned long num_desired_voxels,
                         int *len_x, int *len_y, int *len_z,
                         double *x_offset, double *y_offset, double *z_offset);
 
+/*! \brief Estimate the voxel grid dimensions and offset for a given voxel size.
+    TODO: write the documentation
+*/
+void estimate_voxel_grid(double max_x, double max_y, double max_z,
+                        double min_x, double min_y, double min_z,
+                        double voxel_size,
+                        int *len_x, int *len_y, int *len_z,
+                        double *x_offset, double *y_offset, double *z_offset);
+
 
 /*! \brief Convert a point from metric space to voxel space (indexes).
     \param point Pointer to the point.
