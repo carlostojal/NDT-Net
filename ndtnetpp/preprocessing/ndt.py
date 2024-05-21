@@ -28,7 +28,7 @@ def ndt_downsample(pointcloud: np.ndarray, num_desired_points: int, classes: np.
     new_classes_ptr = new_classes.ctypes.data_as(ctypes.POINTER(ctypes.c_int16))
 
     # create a pointer for the covariance
-    covariances = np.zeros((num_points, 9))
+    covariances = np.zeros((num_desired_points, 9), dtype=np.float64)
     covariances_ptr = covariances.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
 
     # downsample the point cloud
