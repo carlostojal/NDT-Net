@@ -52,9 +52,14 @@ extern "C" {
     \param len_y Number of voxels in the "y" dimension.
     \param len_z Number of voxels in the "z" dimension.
     \param num_desired_nds Number of desired normal distributions.
+    \param num_valid_nds Pointer to the number of valid normal distributions. Will be overwritten.
+    \param kl_divergences Pointer to the array of Kullback-Leibler divergences. Will be overwritten.
+    \param num_kl_divergences Pointer to the number of Kullback-Leibler divergences. Will be overwritten.
 */
-void prune_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, int nel_z,
-                    unsigned long num_desired_nds, unsigned long *num_valid_nds);
+int prune_nds(struct normal_distribution_t *nd_array, 
+                    unsigned int len_x, unsigned int len_y, unsigned int len_z,
+                    unsigned long num_desired_nds, unsigned long *num_valid_nds,
+                    struct kl_divergence_t *kl_divergences, unsigned long *num_kl_divergences);
 
 /*! \brief Downsample the input point cloud with NDT.
     \param point_cloud Pointer to the point cloud.
@@ -73,7 +78,9 @@ int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long 
                     unsigned long num_desired_points,
                     double *downsampled_point_cloud, unsigned long *num_downsampled_points,
                     double *covariances,
-                    unsigned short *downsampled_classes);
+                    unsigned short *downsampled_classes,
+                    struct normal_distribution_t *nd_array,
+                    struct kl_divergence_t *kl_divergences, unsigned long *num_kl_divergences);
 
 #ifdef __cplusplus
 }
