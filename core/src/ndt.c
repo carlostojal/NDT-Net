@@ -378,7 +378,7 @@ int kl_divergence(struct normal_distribution_t *p, struct normal_distribution_t 
     return 0;
 }
 
-void collapse_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, int len_z,
+void prune_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, int len_z,
                     unsigned long num_desired_nds, unsigned long *num_valid_nds) {
 
     // compare the divergences in neighboring voxels
@@ -557,7 +557,7 @@ void ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long
 
     // compute the divergences and remove the distributions with the smallest divergence
     unsigned long num_valid_nds;
-    collapse_nds(nd_array, len_x, len_y, len_z, num_desired_points, &num_valid_nds);
+    prune_nds(nd_array, len_x, len_y, len_z, num_desired_points, &num_valid_nds);
 
     // downsample the point cloud, iterating the voxels
     unsigned long downsampled_index = 0;

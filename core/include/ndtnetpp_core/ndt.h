@@ -118,14 +118,14 @@ int estimate_ndt(double *point_cloud, unsigned long num_points,
 */
 int kl_divergence(struct normal_distribution_t *p, struct normal_distribution_t *q, double *divergence);
 
-/*! \brief Collapse normal distributions with small divergence until the desired number is reached.
+/*! \brief Prune normal distributions with small divergence until the desired number is reached.
     \param nd_array Pointer to the array of normal distributions.
     \param len_x Number of voxels in the "x" dimension.
     \param len_y Number of voxels in the "y" dimension.
     \param len_z Number of voxels in the "z" dimension.
     \param num_desired_nds Number of desired normal distributions.
 */
-void collapse_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, int nel_z,
+void prune_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, int nel_z,
                     unsigned long num_desired_nds, unsigned long *num_valid_nds);
 
 /*! \brief Downsample the input point cloud with NDT.
