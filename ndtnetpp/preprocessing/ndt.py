@@ -2,6 +2,29 @@ import numpy as np
 import open3d as o3d
 import ctypes
 
+# C structure for the normal distribution
+class normal_distribution_t(ctypes.Structure):
+    __fields__ = [
+        {"index": ctypes.c_int32},
+        {"mean": ctypes.c_double * 3},
+        {"old_mean": ctypes.c_double * 3},
+        {"covariance": ctypes.c_double * 9},
+        {"m2": ctypes.c_double * 3},
+        {"num_samples": ctypes.c_int32},
+        {"class": ctypes.c_int16},
+        {"num_class_samples": ctypes.c_int32},
+        {"being_updated": ctypes.c_bool}
+    ]
+
+
+# C structure for the Kullback-Leibler divergence
+class kl_divergence_t(ctypes.Structure):
+    __fields__ = [
+        {"divergence": ctypes.c_double},
+        {"p": ctypes.POINTER(normal_distribution_t)},
+        {"q": ctypes.POINTER(normal_distribution_t)}
+    ]
+
 # import the core shared library
 core = ctypes.cdll.LoadLibrary('core/build/libndtnetpp.so')
 
