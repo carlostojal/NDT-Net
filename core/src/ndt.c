@@ -141,8 +141,6 @@ int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long 
         return -3;
     }
 
-    printf("GUESSED VOXEL SIZE\n");
-
     // compute the divergences
     unsigned long num_valid_nds;
     // allocate the divergences array
@@ -151,12 +149,10 @@ int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long 
         fprintf(stderr, "Error allocating memory for divergences: %s\n", strerror(errno));
         return -4;
     }
-    printf("ALLOCATED DIVERGENCES\n");
     if(calculate_kl_divergences(nd_array, len_x, len_y, len_z, &num_valid_nds, kl_divergences, num_kl_divergences) < 0) {
         fprintf(stderr, "Error calculating divergences!\n");
         return -5;
     }
-    printf("CALCULATED DIVERGENCES\n");
     
     // remove the distributions with the smallest divergence
     prune_nds(nd_array, len_x, len_y, len_z, num_desired_points, &num_valid_nds, kl_divergences, num_kl_divergences);
