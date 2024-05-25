@@ -45,14 +45,23 @@ def ndt_downsample(pointcloud: np.ndarray, num_desired_points: int, classes: np.
     # create a pointer to the classes array
     classes_ptr = None
     if classes is not None:
-        classes_ptr = classes.ctypes.data_as(ctypes.POINTER(ctypes.c_int16))
+        classes_ptr = classes.ctypes.data_as(ctypes.POINTER(ctypes.c_uint16))
 
     new_classes = np.zeros(num_desired_points, dtype=np.int16)
-    new_classes_ptr = new_classes.ctypes.data_as(ctypes.POINTER(ctypes.c_int16))
+    new_classes_ptr = new_classes.ctypes.data_as(ctypes.POINTER(ctypes.c_uint16))
 
     # create a pointer for the covariance
     covariances = np.zeros((num_desired_points, 9), dtype=np.float64)
     covariances_ptr = covariances.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+
+    # create a pointer for the normal distributions
+    nd_array_ptr = ctypes.POINTER(normal_distribution_t)()
+
+    # create a pointer for the kl divergences
+    kl_divergences_ptr = ctypes.POINTER(kl_divergence_t)()
+
+    # create a pointer to the number of divergences
+    num_kl_divergences = ctypes.pointer(ctypes.c_int(0))
 
     # downsample the point cloud
     core.ndt_downsample(pcl_ptr, 3, num_points,
@@ -60,7 +69,9 @@ def ndt_downsample(pointcloud: np.ndarray, num_desired_points: int, classes: np.
                         num_desired_points, 
                         new_pcl_ptr, num_downsampled_points,
                         covariances_ptr,
-                        new_classes_ptr)
+                        new_classes_ptr,
+                        nd_array_ptr,
+                        kl_divergences_ptr, num_kl_divergences)
     
     # print the number of downsampled points
     print(f"Number of downsampled points: {num_downsampled_points.contents.value}")
