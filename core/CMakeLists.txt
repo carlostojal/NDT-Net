@@ -13,8 +13,9 @@ find_package(GTest REQUIRED) # for testing
 # declare the library
 add_library(ndtnetpp
     SHARED
-    src/ndt.c
+    src/normal_distributions.c
     src/kullback_leibler.c
+    src/ndt.c
     src/pointclouds.c
     src/voxel.c
     src/matrix.c

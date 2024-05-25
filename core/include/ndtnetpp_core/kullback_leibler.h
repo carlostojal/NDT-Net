@@ -44,6 +44,10 @@ struct kl_divergence_t {
     struct normal_distribution_t *q; // pointer to the second normal distribution
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*! \brief Compute the multivariate Kullback-Leibler divergence between two normal distributions.
     \param p Pointer to the first normal distribution.
     \param q Pointer to the second normal distribution.
@@ -52,14 +56,8 @@ struct kl_divergence_t {
 */
 int kl_divergence(struct normal_distribution_t *p, struct normal_distribution_t *q, double *divergence);
 
-/*! \brief Prune normal distributions with small divergence until the desired number is reached.
-    \param nd_array Pointer to the array of normal distributions.
-    \param len_x Number of voxels in the "x" dimension.
-    \param len_y Number of voxels in the "y" dimension.
-    \param len_z Number of voxels in the "z" dimension.
-    \param num_desired_nds Number of desired normal distributions.
-*/
-void prune_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, int nel_z,
-                    unsigned long num_desired_nds, unsigned long *num_valid_nds);
+#ifdef __cplusplus
+}
+#endif
 
 #endif // KULLBACK_LEIBLER_H_
