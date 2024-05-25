@@ -107,11 +107,14 @@ int estimate_ndt(double *point_cloud, unsigned long num_points,
     \param point_dim Point dimension. (Example: 3 for xyz points).
     \param num_points Number of points in the input point cloud.
     \param classes Point classes array.
+    \param num_classes Number of classes.
     \param num_desired_points Number of desired points after sampling.
     \param downsampled_point_cloud Pointer to the downsampled point cloud. Will be overwritten.
     \param num_downsampled_points Number of points in the downsampled point cloud. Will be overwritten.
+    \param covariances Pointer to the array of covariances. Will be overwritten.
+    \param downsampled_classes Pointer to the downsampled point classes. Will be overwritten.
  */
-void ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long num_points, 
+int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long num_points, 
                     unsigned short *classes, unsigned short num_classes,
                     unsigned long num_desired_points,
                     double *downsampled_point_cloud, unsigned long *num_downsampled_points,

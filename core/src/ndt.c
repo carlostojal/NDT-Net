@@ -277,7 +277,7 @@ int estimate_ndt(double *point_cloud, unsigned long num_points,
     return 0;  
 }
 
-void ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long num_points,
+int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long num_points,
                     unsigned short *classes, unsigned short num_classes,
                     unsigned long num_desired_points,
                     double *downsampled_point_cloud, unsigned long *num_downsampled_points,
@@ -312,12 +312,12 @@ void ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long
         nd_array = (struct normal_distribution_t *) realloc(nd_array, len_x * len_y * len_z * sizeof(struct normal_distribution_t));
         if(nd_array == NULL) {
             fprintf(stderr, "Error allocating memory for normal distributions: %s\n", strerror(errno));
-            return;
+            return -1;
         }
 
         if(estimate_ndt(point_cloud, num_points, classes, num_classes, guess, len_x, len_y, len_z, x_offset, y_offset, z_offset, nd_array, &num_nds) < 0) {
             fprintf(stderr, "Error estimating normal distributions!\n");
-            return;
+            return -2;
         }
 
         // adjust the voxel size guess limits for binary search
@@ -341,7 +341,7 @@ void ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long
 
     if(iter == MAX_GUESS_ITERATIONS) {
         fprintf(stderr, "Reached maximum number of iterations!\n");
-        return;
+        return -3;
     }
 
     // compute the divergences and remove the distributions with the smallest divergence
@@ -359,7 +359,7 @@ void ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long
                 unsigned long index;
                 if(voxel_pos_to_index(x, y, z, len_x, len_y, len_z, &index) < 0) {
                     fprintf(stderr, "Error converting voxel position to index!\n");
-                    return;
+                    return -4;
                 }
 
                 // verify if the voxel has samples
@@ -388,13 +388,18 @@ void ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long
 
     // free the normal distributions
     // free the classes count pointer
-    free(nd_array->num_class_samples);
+    for(unsigned long i = 0; i < len_x * len_y * len_z; i++) {
+        if(nd_array[i].num_class_samples != NULL)
+            free(nd_array[i].num_class_samples);
+    }
     free(nd_array);
 
     // set the number of downsampled points
     *num_downsampled_points = downsampled_index;
 
     // print_matrix(downsampled_point_cloud, *num_downsampled_points, 3);
+
+    return 0;
 }
 
 void print_nd(struct normal_distribution_t nd) {
