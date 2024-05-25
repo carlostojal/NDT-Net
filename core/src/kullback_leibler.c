@@ -126,3 +126,77 @@ int kl_divergence(struct normal_distribution_t *p, struct normal_distribution_t 
     return 0;
 }
 
+int calculate_kl_divergences(struct normal_distribution_t *nd_array,
+                            unsigned int len_x, unsigned int len_y, unsigned int len_z,
+                            unsigned long *num_valid_nds,
+                            struct kl_divergence_t *kl_divergences, unsigned long *num_kl_divergences) {
+
+    // initialize the counts to zero
+    *num_valid_nds = 0;
+    *num_kl_divergences = 0;
+
+    // calculate the divergences between each pair of neighboring distributions
+    // also, count the valid normal distributions
+    #pragma omp parallel for
+    for(int z = 0; z < len_z; z++) {
+        for(int y = 0; y < len_y; y++) {
+            for(int x = 0; x < len_x; x++) {
+
+                // get the index of the current voxel
+                unsigned long index;
+                if(voxel_pos_to_index(x, y, z, len_x, len_y, len_z, &index) < 0) {
+                    fprintf(stderr, "Error converting voxel position to index!\n");
+                    return -1;
+                }
+
+                // verify if the voxel has samples
+                if(nd_array[index].num_samples == 0)
+                    continue;
+                (*num_valid_nds)++;
+
+                // calculate the divergence between the current voxel and the neighbors in each direction
+                for(short i = 0; i < DIRECTION_LEN; i++) {
+
+                    // get the neighbor index
+                    unsigned long neighbor_index;
+                    if(get_neighbor_index(index, len_x, len_y, len_z, i, &neighbor_index) == -4) { // neighbor out of bounds
+                        continue;
+                    } else if (neighbor_index < 0) {
+                        fprintf(stderr, "Error getting neighbor index!\n");
+                        return -2;
+                    }
+
+                    // verify if the other voxel has samples
+                    if(nd_array[neighbor_index].num_samples == 0)
+                        continue;
+                    
+                    // calculate the divergence between the distributions
+                    double div = 0;
+                    if(kl_divergence(&nd_array[index], &nd_array[neighbor_index], &div) == -2) {
+                        // the q covariance matrix is singular
+                        continue;
+                    }
+
+                    // insert the divergence in the ordered array
+                    unsigned long j = 0;
+                    while(j < *num_kl_divergences) {
+                        if(kl_divergences[j].divergence < div)
+                            break;
+                        j++;
+                    }
+                    // shift the divergences to the right
+                    for(unsigned long k = *num_kl_divergences; k > j; k--) {
+                        kl_divergences[k] = kl_divergences[k-1];
+                    }
+                    // insert the divergence
+                    kl_divergences[j].divergence = div;
+                    kl_divergences[j].p = &nd_array[index];
+                    kl_divergences[j].q = &nd_array[neighbor_index];
+                    (*num_kl_divergences)++;
+                }
+            }
+        }
+    }
+
+    return 0;
+}

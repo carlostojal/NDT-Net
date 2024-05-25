@@ -26,8 +26,6 @@
 
  */
 
-#include <ndtnetpp_core/ndt.h>
-
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
@@ -37,6 +35,7 @@
 #include <omp.h>
 
 #include <ndtnetpp_core/voxel.h>
+#include <ndtnetpp_core/normal_distributions.h>
 
 struct kl_divergence_t {
     double divergence; // divergence value
@@ -55,6 +54,19 @@ extern "C" {
     \return 0 if successful, -1 otherwise.
 */
 int kl_divergence(struct normal_distribution_t *p, struct normal_distribution_t *q, double *divergence);
+
+/*! \brief Calculate the Kullback-Leibler divergences between all pairs of valid normal distributions.
+    \param nd_array Pointer to the array of normal distributions.
+    \param num_nds Number of normal distributions.
+    \param num_valid_nds Pointer to the number of valid normal distributions. Will be overwritten.
+    \param kl_divergences Pointer to the array of Kullback-Leibler divergences. Will be overwritten.
+    \param num_kl_divergences Pointer to the number of Kullback-Leibler divergences. Will be overwritten.
+    \return 0 if successful, -1 otherwise.
+*/
+int calculate_kl_divergences(struct normal_distribution_t *nd_array,
+                            unsigned int len_x, unsigned int len_y, unsigned int len_z,
+                            unsigned long *num_valid_nds,
+                            struct kl_divergence_t *kl_divergences, unsigned long *num_kl_divergences);
 
 #ifdef __cplusplus
 }
