@@ -27,6 +27,7 @@
  */
 
 #include <stdio.h>
+#include <errno.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <string.h>
@@ -35,9 +36,6 @@
 #include <ndtnetpp_core/pointclouds.h>
 #include <ndtnetpp_core/voxel.h>
 #include <ndtnetpp_core/matrix.h>
-
-#include <gsl/gsl_matrix.h>
-#include <gsl/gsl_linalg.h>
 
 #define NUM_PCL_WORKERS 8 // number of workers for bulk point cloud processing tasks
 #define DOWNSAMPLE_UPPER_THRESHOLD 0.2 // upper threshold for downsampled point cloud size
@@ -77,12 +75,6 @@ struct pcl_worker_args_t {
     int worker_id; // worker id
 };
 
-struct kl_divergence_t {
-    double divergence; // divergence value
-    struct normal_distribution_t *p; // pointer to the first normal distribution
-    struct normal_distribution_t *q; // pointer to the second normal distribution
-};
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -109,24 +101,6 @@ int estimate_ndt(double *point_cloud, unsigned long num_points,
                     double x_offset, double y_offset, double z_offset,
                     struct normal_distribution_t *nd_array,
                     unsigned long *num_nds);
-
-/*! \brief Compute the multivariate Kullback-Leibler divergence between two normal distributions.
-    \param p Pointer to the first normal distribution.
-    \param q Pointer to the second normal distribution.
-    \param divergence Pointer to the divergence value. Will be overwritten.
-    \return 0 if successful, -1 otherwise.
-*/
-int kl_divergence(struct normal_distribution_t *p, struct normal_distribution_t *q, double *divergence);
-
-/*! \brief Prune normal distributions with small divergence until the desired number is reached.
-    \param nd_array Pointer to the array of normal distributions.
-    \param len_x Number of voxels in the "x" dimension.
-    \param len_y Number of voxels in the "y" dimension.
-    \param len_z Number of voxels in the "z" dimension.
-    \param num_desired_nds Number of desired normal distributions.
-*/
-void prune_nds(struct normal_distribution_t *nd_array, int len_x, int len_y, int nel_z,
-                    unsigned long num_desired_nds, unsigned long *num_valid_nds);
 
 /*! \brief Downsample the input point cloud with NDT.
     \param point_cloud Pointer to the point cloud.

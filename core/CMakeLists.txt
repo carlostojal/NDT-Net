@@ -14,6 +14,7 @@ find_package(GTest REQUIRED) # for testing
 add_library(ndtnetpp
     SHARED
     src/ndt.c
+    src/kullback_leibler.c
     src/pointclouds.c
     src/voxel.c
     src/matrix.c
