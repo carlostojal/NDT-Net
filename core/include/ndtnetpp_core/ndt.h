@@ -61,6 +61,26 @@ int prune_nds(struct normal_distribution_t *nd_array,
                     unsigned long num_desired_nds, unsigned long *num_valid_nds,
                     struct kl_divergence_t *kl_divergences, unsigned long *num_kl_divergences);
 
+
+/*! \brief Get a point cloud, covariances and classes from an array of normal distributions. 
+    \param nd_array Pointer to the array of normal distributions.
+    \param len_x Number of voxels in the "x" dimension.
+    \param len_y Number of voxels in the "y" dimension.
+    \param len_z Number of voxels in the "z" dimension.
+    \param voxel_size Voxel size.
+    \param point_cloud Pointer to the point cloud. Will be overwritten.
+    \param num_points Pointer to the number of points in the point cloud. Will be overwritten.
+    \param covariances Pointer to the array of covariances. Will be overwritten.
+    \param classes Pointer to the array of classes. Will be overwritten.
+*/
+int to_point_cloud(struct normal_distribution_t *nd_array, 
+                    unsigned int len_x, unsigned int len_y, unsigned int len_z,
+                    double offset_x, double offset_y, double offset_z,
+                    double voxel_size,
+                    double *point_cloud, unsigned long *num_points,
+                    double *covariances,
+                    unsigned short *classes);
+
 /*! \brief Downsample the input point cloud with NDT.
     \param point_cloud Pointer to the point cloud.
     \param point_dim Point dimension. (Example: 3 for xyz points).

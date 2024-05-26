@@ -75,6 +75,54 @@ int prune_nds(struct normal_distribution_t *nd_array,
     }
 }
 
+int to_point_cloud(struct normal_distribution_t *nd_array,
+                    unsigned int len_x, unsigned int len_y, unsigned int len_z,
+                    double x_offset, double y_offset, double z_offset,
+                    double voxel_size,
+                    double *point_cloud, unsigned long *num_points,
+                    double *covariances,
+                    unsigned short *classes) {
+
+
+    *num_points = 0;
+
+    // downsample the point cloud, iterating the voxels
+    #pragma omp parallel for
+    for(int z = 0; z < len_z; z++) {
+        for(int y = 0; y < len_y; y++) {
+            for(int x = 0; x < len_x; x++) {
+
+                // get the index of the current voxel
+                unsigned long index;
+                if(voxel_pos_to_index(x, y, z, len_x, len_y, len_z, &index) < 0) {
+                    fprintf(stderr, "Error converting voxel position to index!\n");
+                    return -1;
+                }
+
+                // verify if the voxel has samples
+                if(nd_array[index].num_samples == 0)
+                    continue;
+
+                // get the point in metric space
+                double point[3];
+                voxel_to_metric_space(x, y, z, len_x, len_y, len_z, x_offset, y_offset, z_offset, voxel_size, point);
+
+                // copy the point to the downsampled point cloud
+                memcpy(&point_cloud[(*num_points)*3], point, 3 * sizeof(double));
+
+                // copy the covariance matrix
+                memcpy(&covariances[(*num_points)*9], nd_array[index].covariance, 9 * sizeof(double));
+                // copy the class
+                if(classes != NULL) {
+                    classes[*num_points] = nd_array[index].class;
+                }
+
+                (*num_points)++;
+            }
+        }
+    }
+}
+
 int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long num_points,
                     unsigned short *classes, unsigned short num_classes,
                     unsigned long num_desired_points,
@@ -157,54 +205,13 @@ int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long 
     // remove the distributions with the smallest divergence
     prune_nds(nd_array, len_x, len_y, len_z, num_desired_points, &num_valid_nds, kl_divergences, num_kl_divergences);
 
-    // downsample the point cloud, iterating the voxels
-    unsigned long downsampled_index = 0;
-    #pragma omp parallel for
-    for(int z = 0; z < len_z; z++) {
-        for(int y = 0; y < len_y; y++) {
-            for(int x = 0; x < len_x; x++) {
-
-                // get the index of the current voxel
-                unsigned long index;
-                if(voxel_pos_to_index(x, y, z, len_x, len_y, len_z, &index) < 0) {
-                    fprintf(stderr, "Error converting voxel position to index!\n");
-                    return -4;
-                }
-
-                // verify if the voxel has samples
-                if(nd_array[index].num_samples == 0)
-                    continue;
-
-                // get the point in metric space
-                double point[3];
-                voxel_to_metric_space(x, y, z, len_x, len_y, len_z, x_offset, y_offset, z_offset, voxel_size, point);
-
-                // copy the point to the downsampled point cloud
-                for(int i = 0; i < 3; i++) {
-                    downsampled_point_cloud[downsampled_index*3 + i] = point[i];
-                }
-                // copy the covariance matrix
-                memcpy(&covariances[downsampled_index*9], nd_array[index].covariance, 9 * sizeof(double));
-                // copy the class
-                if(classes != NULL) {
-                    downsampled_classes[downsampled_index] = nd_array[index].class;
-                }
-
-                downsampled_index++;
-            }
-        }
-    }
-
-    // free the normal distributions
-    // free the classes count pointer
-    for(unsigned long i = 0; i < len_x * len_y * len_z; i++) {
-        if(nd_array[i].num_class_samples != NULL)
-            free(nd_array[i].num_class_samples);
-    }
-    free(nd_array);
-
-    // set the number of downsampled points
-    *num_downsampled_points = downsampled_index;
+    // convert to point cloud
+    to_point_cloud(nd_array, len_x, len_y, len_z, 
+                    x_offset, y_offset, z_offset, 
+                    voxel_size, 
+                    downsampled_point_cloud, num_downsampled_points, 
+                    covariances, 
+                    downsampled_classes);
 
     // print_matrix(downsampled_point_cloud, *num_downsampled_points, 3);
 
