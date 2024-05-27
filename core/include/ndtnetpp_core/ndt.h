@@ -85,6 +85,10 @@ int to_point_cloud(struct normal_distribution_t *nd_array,
     \param point_cloud Pointer to the point cloud.
     \param point_dim Point dimension. (Example: 3 for xyz points).
     \param num_points Number of points in the input point cloud.
+    \param len_x Number of voxels in the "x" dimension. Will be overwritten.
+    \param len_y Number of voxels in the "y" dimension. Will be overwritten.
+    \param len_z Number of voxels in the "z" dimension. Will be overwritten.
+    \param voxel_size Voxel size of the grid.
     \param classes Point classes array.
     \param num_classes Number of classes.
     \param num_desired_points Number of desired points after sampling.
@@ -94,6 +98,8 @@ int to_point_cloud(struct normal_distribution_t *nd_array,
     \param downsampled_classes Pointer to the downsampled point classes. Will be overwritten.
  */
 int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long num_points, 
+                    unsigned int *len_x, unsigned int *len_y, unsigned int *len_z,
+                    double *voxel_size,
                     unsigned short *classes, unsigned short num_classes,
                     unsigned long num_desired_points,
                     double *downsampled_point_cloud, unsigned long *num_downsampled_points,

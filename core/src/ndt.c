@@ -124,6 +124,8 @@ int to_point_cloud(struct normal_distribution_t *nd_array,
 }
 
 int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long num_points,
+                    unsigned int *len_x, unsigned int *len_y, unsigned int *len_z,
+                    double *voxel_size,
                     unsigned short *classes, unsigned short num_classes,
                     unsigned long num_desired_points,
                     double *downsampled_point_cloud, unsigned long *num_downsampled_points,
@@ -138,8 +140,6 @@ int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long 
     get_pointcloud_limits(point_cloud, point_dim, num_points, &max_x, &max_y, &max_z, &min_x, &min_y, &min_z);
 
     // estimate the voxel size
-    double voxel_size;
-    int len_x, len_y, len_z;
     double x_offset, y_offset, z_offset;
 
     double guess = (double) (MAX_VOXEL_GUESS - MIN_VOXEL_GUESS) / 2.0;
@@ -150,17 +150,17 @@ int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long 
     unsigned int iter = 0;
     do {
 
-        estimate_voxel_grid(max_x, max_y, max_z, min_x, min_y, min_z, guess, &len_x, &len_y, &len_z,
+        estimate_voxel_grid(max_x, max_y, max_z, min_x, min_y, min_z, guess, len_x, len_y, len_z,
                             &x_offset, &y_offset, &z_offset);
 
         // allocate the normal distributions
-        nd_array = (struct normal_distribution_t *) realloc(nd_array, len_x * len_y * len_z * sizeof(struct normal_distribution_t));
+        nd_array = (struct normal_distribution_t *) realloc(nd_array, (*len_x) * (*len_y) * (*len_z) * sizeof(struct normal_distribution_t));
         if(nd_array == NULL) {
             fprintf(stderr, "Error allocating memory for normal distributions: %s\n", strerror(errno));
             return -1;
         }
 
-        if(estimate_ndt(point_cloud, num_points, classes, num_classes, guess, len_x, len_y, len_z, x_offset, y_offset, z_offset, nd_array, &num_nds) < 0) {
+        if(estimate_ndt(point_cloud, num_points, classes, num_classes, guess, *len_x, *len_y, *len_z, x_offset, y_offset, z_offset, nd_array, &num_nds) < 0) {
             fprintf(stderr, "Error estimating normal distributions!\n");
             return -2;
         }
@@ -182,7 +182,7 @@ int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long 
 
     } while(iter < MAX_GUESS_ITERATIONS);
 
-    voxel_size = guess;
+    *voxel_size = guess;
 
     if(iter == MAX_GUESS_ITERATIONS) {
         fprintf(stderr, "Reached maximum number of iterations!\n");
@@ -192,23 +192,23 @@ int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long 
     // compute the divergences
     unsigned long num_valid_nds;
     // allocate the divergences array
-    kl_divergences = (struct kl_divergence_t *) malloc(len_x * len_y * len_z * DIRECTION_LEN * sizeof(struct kl_divergence_t));
+    kl_divergences = (struct kl_divergence_t *) malloc((*len_x) * (*len_y) * (*len_z) * DIRECTION_LEN * sizeof(struct kl_divergence_t));
     if(kl_divergences == NULL) {
         fprintf(stderr, "Error allocating memory for divergences: %s\n", strerror(errno));
         return -4;
     }
-    if(calculate_kl_divergences(nd_array, len_x, len_y, len_z, &num_valid_nds, kl_divergences, num_kl_divergences) < 0) {
+    if(calculate_kl_divergences(nd_array, *len_x, *len_y, *len_z, &num_valid_nds, kl_divergences, num_kl_divergences) < 0) {
         fprintf(stderr, "Error calculating divergences!\n");
         return -5;
     }
     
     // remove the distributions with the smallest divergence
-    prune_nds(nd_array, len_x, len_y, len_z, num_desired_points, &num_valid_nds, kl_divergences, num_kl_divergences);
+    prune_nds(nd_array, *len_x, *len_y, *len_z, num_desired_points, &num_valid_nds, kl_divergences, num_kl_divergences);
 
     // convert to point cloud
-    to_point_cloud(nd_array, len_x, len_y, len_z, 
+    to_point_cloud(nd_array, *len_x, *len_y, *len_z, 
                     x_offset, y_offset, z_offset, 
-                    voxel_size, 
+                    *voxel_size, 
                     downsampled_point_cloud, num_downsampled_points, 
                     covariances, 
                     downsampled_classes);
