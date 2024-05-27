@@ -33,8 +33,8 @@ int prune_nds(struct normal_distribution_t *nd_array,
     // compare the divergences in neighboring voxels
     // the distributions with the lowest divergence will be removed, because they introduce the least new information
 
-    if(num_desired_nds > len_x * len_y * len_z) {
-        fprintf(stderr, "Number of desired normal distributions is greater than the number of voxels!\n");
+    if(num_desired_nds > *num_valid_nds) {
+        fprintf(stderr, "Number of desired normal distributions is greater than the number valid distributions!\n");
         return -1;
     }
 
@@ -45,14 +45,16 @@ int prune_nds(struct normal_distribution_t *nd_array,
     unsigned int to_remove = *num_valid_nds - num_desired_nds;
     unsigned long idx_to_remove = 0;
 
-    // verify if there are enough valid normal distributions
-    if(*num_valid_nds < num_desired_nds) {
-        fprintf(stderr, "Number of valid normal distributions is less than the desired number!\n");
-        return -2;
-    }
-
     // remove the distributions with the smallest divergence
     for(unsigned long i = 0; i < to_remove; idx_to_remove++) {
+
+        // printf("div: %p\n", kl_divergences);
+
+        if(idx_to_remove >= *num_kl_divergences) {
+            fprintf(stderr, "Reached the end of the divergences array!\n");
+            return -2;
+        }
+
         // if it was already removed or has no samples, skip this
         if(kl_divergences[idx_to_remove].p->num_samples == 0) {
             continue;
@@ -64,14 +66,9 @@ int prune_nds(struct normal_distribution_t *nd_array,
         i++;
     }
 
-    // move the divergences array using memcpy for performance
-    memcpy(kl_divergences, kl_divergences+idx_to_remove, (*num_kl_divergences) * sizeof(struct kl_divergence_t));
-
-    // reallocate the divergences array to save memory
-    kl_divergences = (struct kl_divergence_t *) realloc(kl_divergences, (*num_kl_divergences) * sizeof(struct kl_divergence_t));
-    if(kl_divergences == NULL) {
-        fprintf(stderr, "Error reallocating memory for divergences: %s\n", strerror(errno));
-        return -5;
+    // move the divergences array idx_to_remove positions to the left
+    for(unsigned long i = 0; i < *num_kl_divergences; i++) {
+        kl_divergences[i] = kl_divergences[i+idx_to_remove];
     }
 }
 
@@ -132,8 +129,8 @@ int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long 
                     double *downsampled_point_cloud, unsigned long *num_downsampled_points,
                     double *covariances,
                     unsigned short *downsampled_classes,
-                    struct normal_distribution_t *nd_array,
-                    struct kl_divergence_t *kl_divergences, unsigned long *num_kl_divergences) {
+                    struct normal_distribution_t **nd_array, unsigned long *num_valid_nds,
+                    struct kl_divergence_t **kl_divergences, unsigned long *num_kl_divergences) {
 
     // get the point cloud limits
     double max_x, max_y, max_z;
@@ -148,17 +145,24 @@ int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long 
     unsigned int iter = 0;
     do {
 
+        // estimate the voxel grid size, dimensions and offsets
         estimate_voxel_grid(max_x, max_y, max_z, min_x, min_y, min_z, guess, len_x, len_y, len_z,
                             offset_x, offset_y, offset_z);
 
         // allocate the normal distributions
-        nd_array = (struct normal_distribution_t *) realloc(nd_array, (*len_x) * (*len_y) * (*len_z) * sizeof(struct normal_distribution_t));
-        if(nd_array == NULL) {
+        *nd_array = (struct normal_distribution_t *) malloc((*len_x) * (*len_y) * (*len_z) * sizeof(struct normal_distribution_t));
+        if(*nd_array == NULL) {
             fprintf(stderr, "Error allocating memory for normal distributions: %s\n", strerror(errno));
             return -1;
         }
 
-        if(estimate_ndt(point_cloud, num_points, classes, num_classes, guess, *len_x, *len_y, *len_z, *offset_x, *offset_y, *offset_z, nd_array, &num_nds) < 0) {
+        // estimate the normal distributions, voxelizing the point cloud
+        if(estimate_ndt(point_cloud, num_points, 
+                        classes, num_classes, 
+                        guess, 
+                        *len_x, *len_y, *len_z, 
+                        *offset_x, *offset_y, *offset_z, 
+                        *nd_array, &num_nds) < 0) {
             fprintf(stderr, "Error estimating normal distributions!\n");
             return -2;
         }
@@ -176,6 +180,9 @@ int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long 
         // get the next guess
         guess = min_guess + (max_guess - min_guess) / 2.0;
 
+        // free the normal distributions
+        free_nds(*nd_array, (*len_x) * (*len_y) * (*len_z));
+
         iter++;
 
     } while(iter < MAX_GUESS_ITERATIONS);
@@ -188,23 +195,22 @@ int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long 
     }
 
     // compute the divergences
-    unsigned long num_valid_nds;
     // allocate the divergences array
-    kl_divergences = (struct kl_divergence_t *) malloc((*len_x) * (*len_y) * (*len_z) * DIRECTION_LEN * sizeof(struct kl_divergence_t));
-    if(kl_divergences == NULL) {
+    *kl_divergences = (struct kl_divergence_t *) malloc((*len_x) * (*len_y) * (*len_z) * DIRECTION_LEN * sizeof(struct kl_divergence_t));
+    if(*kl_divergences == NULL) {
         fprintf(stderr, "Error allocating memory for divergences: %s\n", strerror(errno));
         return -4;
     }
-    if(calculate_kl_divergences(nd_array, *len_x, *len_y, *len_z, &num_valid_nds, kl_divergences, num_kl_divergences) < 0) {
+    if(calculate_kl_divergences(*nd_array, *len_x, *len_y, *len_z, num_valid_nds, *kl_divergences, num_kl_divergences) < 0) {
         fprintf(stderr, "Error calculating divergences!\n");
         return -5;
     }
     
     // remove the distributions with the smallest divergence
-    prune_nds(nd_array, *len_x, *len_y, *len_z, num_desired_points, &num_valid_nds, kl_divergences, num_kl_divergences);
+    prune_nds(*nd_array, *len_x, *len_y, *len_z, num_desired_points, num_valid_nds, *kl_divergences, num_kl_divergences);
 
     // convert to point cloud
-    to_point_cloud(nd_array, *len_x, *len_y, *len_z, 
+    to_point_cloud(*nd_array, *len_x, *len_y, *len_z, 
                     *offset_x, *offset_y, *offset_z, 
                     *voxel_size, 
                     downsampled_point_cloud, num_downsampled_points, 
@@ -214,4 +220,20 @@ int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long 
     // print_matrix(downsampled_point_cloud, *num_downsampled_points, 3);
 
     return 0;
+}
+
+void free_nds(struct normal_distribution_t *nd_array, unsigned long num_nds) {
+
+    // iterate the normal distributions to free the class samples array
+    for(unsigned long i = 0; i < num_nds; i++) {
+        if(nd_array[i].num_samples > 0) {
+            free(nd_array[i].num_class_samples);
+        }
+    }
+
+    // free the normal distributions array
+    free(nd_array);
+
+    // assign the pointer to NULL for clarity
+    nd_array = NULL;
 }

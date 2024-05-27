@@ -106,8 +106,14 @@ int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long 
                     double *downsampled_point_cloud, unsigned long *num_downsampled_points,
                     double *covariances,
                     unsigned short *downsampled_classes,
-                    struct normal_distribution_t *nd_array,
-                    struct kl_divergence_t *kl_divergences, unsigned long *num_kl_divergences);
+                    struct normal_distribution_t **nd_array, unsigned long *num_valid_nds,
+                    struct kl_divergence_t **kl_divergences, unsigned long *num_kl_divergences);
+
+/*! \brief Free the normal distributions array and its class samples. 
+    \param nd_array Pointer to the array of normal distributions.
+    \param num_nds Number of normal distributions.
+*/
+void free_nds(struct normal_distribution_t *nd_array, unsigned long num_nds);
 
 #ifdef __cplusplus
 }
