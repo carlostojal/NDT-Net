@@ -99,6 +99,7 @@ int to_point_cloud(struct normal_distribution_t *nd_array,
  */
 int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long num_points, 
                     unsigned int *len_x, unsigned int *len_y, unsigned int *len_z,
+                    double *offset_x, double *offset_y, double *offset_z,
                     double *voxel_size,
                     unsigned short *classes, unsigned short num_classes,
                     unsigned long num_desired_points,

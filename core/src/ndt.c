@@ -125,6 +125,7 @@ int to_point_cloud(struct normal_distribution_t *nd_array,
 
 int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long num_points,
                     unsigned int *len_x, unsigned int *len_y, unsigned int *len_z,
+                    double *offset_x, double *offset_y, double *offset_z,
                     double *voxel_size,
                     unsigned short *classes, unsigned short num_classes,
                     unsigned long num_desired_points,
@@ -139,9 +140,6 @@ int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long 
     double min_x, min_y, min_z;
     get_pointcloud_limits(point_cloud, point_dim, num_points, &max_x, &max_y, &max_z, &min_x, &min_y, &min_z);
 
-    // estimate the voxel size
-    double x_offset, y_offset, z_offset;
-
     double guess = (double) (MAX_VOXEL_GUESS - MIN_VOXEL_GUESS) / 2.0;
     double min_guess = MIN_VOXEL_GUESS;
     double max_guess = MAX_VOXEL_GUESS;
@@ -151,7 +149,7 @@ int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long 
     do {
 
         estimate_voxel_grid(max_x, max_y, max_z, min_x, min_y, min_z, guess, len_x, len_y, len_z,
-                            &x_offset, &y_offset, &z_offset);
+                            offset_x, offset_y, offset_z);
 
         // allocate the normal distributions
         nd_array = (struct normal_distribution_t *) realloc(nd_array, (*len_x) * (*len_y) * (*len_z) * sizeof(struct normal_distribution_t));
@@ -160,7 +158,7 @@ int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long 
             return -1;
         }
 
-        if(estimate_ndt(point_cloud, num_points, classes, num_classes, guess, *len_x, *len_y, *len_z, x_offset, y_offset, z_offset, nd_array, &num_nds) < 0) {
+        if(estimate_ndt(point_cloud, num_points, classes, num_classes, guess, *len_x, *len_y, *len_z, *offset_x, *offset_y, *offset_z, nd_array, &num_nds) < 0) {
             fprintf(stderr, "Error estimating normal distributions!\n");
             return -2;
         }
@@ -207,7 +205,7 @@ int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long 
 
     // convert to point cloud
     to_point_cloud(nd_array, *len_x, *len_y, *len_z, 
-                    x_offset, y_offset, z_offset, 
+                    *offset_x, *offset_y, *offset_z, 
                     *voxel_size, 
                     downsampled_point_cloud, num_downsampled_points, 
                     covariances, 
