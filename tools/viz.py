@@ -8,7 +8,7 @@ import argparse
 import open3d as o3d
 import numpy as np
 import time
-from ndtnetpp.preprocessing.ndt import ndt_downsample
+from ndtnetpp.preprocessing.ndt import NDT_Sampler
 
 def read_pcl(file: str, header_lines: int = 10, class_pos: int = 5) -> tuple[np.ndarray,np.ndarray]:
     """
@@ -72,12 +72,16 @@ if __name__ == "__main__":
     # initialize argument parser
     parser = argparse.ArgumentParser(description="Visualize NDT output on a point cloud.")
     parser.add_argument("--input", help="Input file containing point cloud and classes.", type=str, required=True)
-    parser.add_argument("--target", help="Target number of points", type=int, default=1000)
-    parser.add_argument("--classes", help="Number of classes", type=int, default=29)
+    parser.add_argument("--target", help="Target number of points", type=int, default=1000, required=True)
+    parser.add_argument("--target1", help="Target number of points", type=int, default=None, required=False)
+    parser.add_argument("--classes", help="Number of classes", type=int, default=29, required=False)
     args = parser.parse_args()
 
     # read input file
     pcd, classes = read_pcl(args.input)
+
+    # instantiate the NDT sampler
+    sampler = NDT_Sampler(pcd, classes, int(args.classes))
 
     # pcd.paint_uniform_color([1, 0, 0])
     pcd_painted = paint_class(pcd, classes, int(args.classes))
@@ -89,22 +93,48 @@ if __name__ == "__main__":
     vis.create_window()
 
     # visualize point cloud
-    vis.add_geometry(pcd_painted)
+    # vis.add_geometry(pcd_painted)
 
     # downsample the point cloud
     # measure starting time
     start = time.time()
-    downsampled_pcd, covariances, classes = ndt_downsample(pcd, int(args.target), classes, int(args.classes))
+    downsampled_pcd, covariances, classes = sampler.downsample(int(args.target))
+    print("Downsampled point cloud has", len(downsampled_pcd), "points.")
     # measure ending time
     end = time.time()
     duration = end - start
     hz = 1 / duration
     print(f"Downsampling took {duration} seconds - {hz} Hz")
-    # downsampled_pcd.paint_uniform_color([0, 1, 0])
-    downsampled_pcd_obj = paint_class(np.array(downsampled_pcd.points), classes, int(args.classes))
+
+    # convert to open3d point cloud object
+    downsampled_pcd_obj = o3d.geometry.PointCloud()
+    downsampled_pcd_obj.points = o3d.utility.Vector3dVector(downsampled_pcd)
+    downsampled_pcd_obj.paint_uniform_color([0, 1, 0])
+
+    # downsampled_pcd_obj = paint_class(np.array(downsampled_pcd.points), classes, int(args.classes))
 
     # visualize downsampled point cloud
     vis.add_geometry(downsampled_pcd_obj)
+
+    if args.target1 is not None:
+        # prune the point cloud
+        # measure starting time
+        start = time.time()
+        pruned_pcd, covariances, classes = sampler.prune(int(args.target1))
+        print("Pruned point cloud has", len(pruned_pcd), "points.")
+        # measure ending time
+        end = time.time()
+        duration = end - start
+        hz = 1 / duration
+        print(f"Pruning took {duration} seconds - {hz} Hz")
+
+        # convert to open3d point cloud object
+        pruned_pcd_obj = o3d.geometry.PointCloud()
+        pruned_pcd_obj.points = o3d.utility.Vector3dVector(pruned_pcd)
+        pruned_pcd_obj.paint_uniform_color([0, 0, 1])
+
+        # visualize pruned point cloud
+        vis.add_geometry(pruned_pcd_obj)
 
     # run the visualizer
     vis.run()
