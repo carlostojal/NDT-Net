@@ -63,6 +63,21 @@ class NDT_Sampler:
         self.offset_z = ctypes.pointer(ctypes.c_double(0.0))
 
         self.voxel_size = ctypes.pointer(ctypes.c_double(0.0))
+
+
+    def __del__(self) -> None:
+        """
+        Destructor for the NDT_Sampler class.
+
+        Returns:
+            None
+        """
+        # free the normal distribution array
+        core.free_nd_array(self.nd_array_ptr, self.num_points)
+
+        # free the Kullback-Leibler divergence array
+        core.free_kl_divergences(self.kl_divergences_ptr)
+    
     
     def downsample(self, num_desired_points: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
@@ -74,6 +89,8 @@ class NDT_Sampler:
         Returns:
             tuple[np.ndarray, np.ndarray, np.ndarray]: The downsampled point cloud, the covariances, and the classes.
         """
+
+        self.num_points = num_desired_points
 
         # create the point cloud pointer
         pcl_ptr = self.pointcloud.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
@@ -148,6 +165,8 @@ class NDT_Sampler:
         Returns:
             tuple[np.ndarray, np.ndarray, np.ndarray]: The pruned point cloud, the covariances, and the classes.
         """
+
+        self.num_points = new_desired_points
 
         # set the argument types
         core.prune_nds.argtypes = [
