@@ -66,15 +66,16 @@ class PointNet(nn.Module):
     PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation
     """
 
-    def __init__(self, point_dim: int = 12, num_points: int = 4096) -> None:
+    def __init__(self, point_dim: int = 3, num_points: int = 4096) -> None:
         super().__init__()
 
         self.sampler: NDT_Sampler = None
 
         self.point_dim = point_dim
+        self.covariance_dim = point_dim**2
         self.num_points = num_points
 
-        self.conv1 = nn.Conv1d(self.point_dim, 64, 1)
+        self.conv1 = nn.Conv1d(self.point_dim+self.covariance_dim, 64, 1)
         self.conv2 = nn.Conv1d(64, 128, 1)
         self.conv3 = nn.Conv1d(128, 1024, 1)
 
@@ -98,11 +99,11 @@ class PointNet(nn.Module):
         """
 
         # create a points tensor
-        points = torch.zeros(x.size(0), self.num_points, 3)
+        points = torch.zeros(x.size(0), self.num_points, self.point_dim)
         points = points.to(x.device)
 
         # create a covariances tensor
-        covariances = torch.zeros(x.size(0), self.num_points, 9)
+        covariances = torch.zeros(x.size(0), self.num_points, self.covariance_dim)
         covariances = covariances.to(x.device)
 
         # iterate over the batch
@@ -123,12 +124,26 @@ class PointNet(nn.Module):
         # concatenate the covariances to the input tensor, making 12-dimensional points
         x = torch.cat((points, covariances), dim=2)
 
+        B, N, D = x.size()
+
         x = x.transpose(2, 1)
 
         # input transform
-        t = self.t1(x)
-        x = x.transpose(2, 1)
-        x = torch.bmm(x, t)
+        p = x[:, :self.point_dim, :] # crop the "point_dim" dimensions
+        t = self.t1(p) # [B, 3, 3]
+        x = x.transpose(2, 1) # [B, N, 12]
+        # apply the transformation matrix to the points
+        p = torch.bmm(t, p)
+        p = p.transpose(2, 1)
+        x[:, :, :self.point_dim] = p
+        # apply the transformation matrix to the covariances
+        print(x.shape)
+        cov = x[:, :, self.point_dim:] # [B, N, 9]
+        # multiply the transition matrix with the covariances
+        cov = cov.view(B, N, 3, 3)
+        cov = torch.matmul(t.unsqueeze(1), cov) # [B, N, 3, 3]
+        cov = cov.view(B, N, 9) # [B, N, 9]
+        x[:, :, self.point_dim:] = cov
         x = x.transpose(2, 1)
 
         # MLP
@@ -151,7 +166,7 @@ class PointNet(nn.Module):
 
 class PointNetClassification(nn.Module):
 
-    def __init__(self, point_dim: int = 12, num_points: int = 4096, num_classes: int = 512) -> None:
+    def __init__(self, point_dim: int = 3, num_points: int = 4096, num_classes: int = 512) -> None:
         super().__init__()
 
         self.point_dim = point_dim
@@ -183,7 +198,7 @@ class PointNetClassification(nn.Module):
     
 class PointNetSegmentation(nn.Module):
 
-    def __init__(self, point_dim: int = 12, num_classes: int = 16) -> None:
+    def __init__(self, point_dim: int = 3, num_classes: int = 16) -> None:
         super().__init__()
 
         self.point_dim = point_dim
@@ -227,7 +242,7 @@ class PointNetSegmentation(nn.Module):
 
 class PointNetEmbedding(nn.Module):
 
-    def __init__(self, point_dim: int = 12, sequence_len: int = 1024, embedding_dim: int = 762) -> None:
+    def __init__(self, point_dim: int = 3, sequence_len: int = 1024, embedding_dim: int = 762) -> None:
         super().__init__()
 
         self.point_dim = point_dim
