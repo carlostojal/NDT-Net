@@ -1,6 +1,7 @@
 import torch
 from torch import nn
-from ..preprocessing import NDT_Sampler
+import numpy as np
+from ..preprocessing.ndt import NDT_Sampler
 
 class TNet(nn.Module):
     """
@@ -96,26 +97,31 @@ class PointNet(nn.Module):
         - torch.Tensor: the output of the PointNet
         """
 
+        # create a points tensor
+        points = torch.zeros(x.size(0), self.num_points, 3)
+        points = points.to(x.device)
+
         # create a covariances tensor
-        covariances = torch.zeros(x.size(0), x.size(1), 9)
+        covariances = torch.zeros(x.size(0), self.num_points, 9)
+        covariances = covariances.to(x.device)
 
         # iterate over the batch
         for i in range(x.size(0)):
             # create a sampler instance
-            self.sampler = NDT_Sampler(x[i].numpy())
+            self.sampler = NDT_Sampler(x[i].cpu().numpy().astype(np.float64))
 
             # downsample the points to the desired number of points
             # convert the points to a numpy array
             downsampled_points, cov, _ = self.sampler.downsample(self.num_points)
 
             # add the covariances to the tensor
-            covariances[i] = torch.from_numpy(cov)
+            covariances[i] = torch.from_numpy(cov).to(x.device)
 
             # convert the downsampled points to a tensor
-            x[i] = torch.from_numpy(downsampled_points)
+            points[i] = torch.from_numpy(downsampled_points).to(x.device)
 
         # concatenate the covariances to the input tensor, making 12-dimensional points
-        x = torch.cat((x, covariances), dim=2)
+        x = torch.cat((points, covariances), dim=2)
 
         x = x.transpose(2, 1)
 
