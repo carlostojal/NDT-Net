@@ -90,8 +90,6 @@ class NDT_Sampler:
             tuple[np.ndarray, np.ndarray, np.ndarray]: The downsampled point cloud, the covariances, and the classes.
         """
 
-        self.num_points = num_desired_points
-
         # create the point cloud pointer
         pcl_ptr = self.pointcloud.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
 
@@ -148,6 +146,8 @@ class NDT_Sampler:
                             new_classes_ptr,
                             nd_array_ptr_ref, self.num_valid_nds,
                             kl_divergences_ptr_ref, self.num_kl_divergences)
+        
+        self.num_points = num_desired_points
 
         self.pointcloud = new_pcl
         self.covariances = covariances
@@ -165,8 +165,6 @@ class NDT_Sampler:
         Returns:
             tuple[np.ndarray, np.ndarray, np.ndarray]: The pruned point cloud, the covariances, and the classes.
         """
-
-        self.num_points = new_desired_points
 
         # set the argument types
         core.prune_nds.argtypes = [
@@ -218,6 +216,8 @@ class NDT_Sampler:
                             new_pcl_ptr, num_points_ptr,
                             covariances_ptr, 
                             new_classes_ptr)
+        
+        self.num_points = new_desired_points
         
         self.pointcloud = new_pcl
         self.covariances = covariances
