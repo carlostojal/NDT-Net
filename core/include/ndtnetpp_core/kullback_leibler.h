@@ -68,6 +68,11 @@ int calculate_kl_divergences(struct normal_distribution_t *nd_array,
                             unsigned long *num_valid_nds,
                             struct kl_divergence_t *kl_divergences, unsigned long *num_kl_divergences);
 
+/*! \brief Free the memory allocated for the Kullback-Leibler divergences.
+    \param kl_divergences Pointer to the array of Kullback-Leibler divergences.
+*/
+void free_kl_divergences(struct kl_divergence_t *kl_divergences);
+
 #ifdef __cplusplus
 }
 #endif
