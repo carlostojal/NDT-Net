@@ -45,7 +45,7 @@ class NDT_Sampler:
         self.pointcloud: np.ndarray = pointcloud
         self.covariances: np.ndarray = None
         self.classes: np.ndarray = classes
-        self.num_classes: int = num_classes
+        self.num_classes: int = num_classes if num_classes is not None else 0
         self.num_points: int = len(pointcloud)
 
         self.nd_array_ptr: ctypes.POINTER = ctypes.POINTER(normal_distribution_t)()
@@ -73,7 +73,7 @@ class NDT_Sampler:
             None
         """
         # free the normal distribution array
-        core.free_nd_array(self.nd_array_ptr, self.num_points)
+        core.free_nds(self.nd_array_ptr, self.num_points)
 
         # free the Kullback-Leibler divergence array
         core.free_kl_divergences(self.kl_divergences_ptr)
