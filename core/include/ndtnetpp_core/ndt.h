@@ -38,9 +38,9 @@
 #define DOWNSAMPLE_UPPER_THRESHOLD 0.2 // upper threshold for downsampled point cloud size
 #define MIN_POINTS_GUESS 1 // minumum number of points to guess the number of normal distributions
 #define MAX_POINTS_GUESS 1000000 // maximum number of points to guess the number of normal distributions
-#define MIN_VOXEL_GUESS 0.05 // minimum voxel size guess
-#define MAX_VOXEL_GUESS 5.0 // maximum voxel size guess
-#define MAX_GUESS_ITERATIONS 10 // maximum number of iterations to guess the number of normal distributions
+#define MIN_VOXEL_GUESS 0.01 // minimum voxel size guess
+#define MAX_VOXEL_GUESS 10.0 // maximum voxel size guess
+#define MAX_GUESS_ITERATIONS 15 // maximum number of iterations to guess the number of normal distributions
 
 #ifdef __cplusplus
 extern "C" {
