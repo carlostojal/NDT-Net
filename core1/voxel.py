@@ -30,40 +30,30 @@ from typing import Tuple, List
 
 
 def estimate_voxel_size(num_desired_voxels: int,
-                        max_x: float, max_y: float, max_z: float,
-                        min_x: float, min_y: float, min_z: float) -> Tuple[float, int, int, int, float, float, float]:
+                        max_limits: np.ndarray,
+                        min_limits: np.ndarray) -> Tuple[float, np.ndarray, np.ndarray]:
     """
     Estimate the voxel size for a given number of desired voxels, given space dimensions.
 
     Args:
         num_desired_voxels (int): Desired number of voxels.
-        max_x (float): Maximum x coordinate.
-        max_y (float): Maximum y coordinate.
-        max_z (float): Maximum z coordinate.
+        max_limits (ndarray): Maximum limits of the coordinates in each dimension.
+        min_limits (ndarray): Minimum limits of the coordinates in each dimension.
     
     Returns:
-        Tuple[float, int, int, int, float, float, float]: Tuple containing the voxel size, the number of voxels in each dimension, and the offsets in each dimension.
+        Tuple[float, np.ndarray, np.ndarray]: Tuple containing the voxel size and the number of voxels in each dimension.
     """
 
-    # calculate the lengths in each dimension
-    x_dim = max_x - min_x
-    y_dim = max_y - min_y
-    z_dim = max_z - min_z
+    # calculate the lengths
+    dims = max_limits - min_limits
 
     # calculate the voxel size
-    voxel_size = (x_dim * y_dim * z_dim) / num_desired_voxels
+    voxel_size = np.prod(dims) / num_desired_voxels
 
     # calculate the number of voxels in each dimension
-    len_x = int(ceil(x_dim / voxel_size))
-    len_y = int(ceil(y_dim / voxel_size))
-    len_z = int(ceil(z_dim / voxel_size))
+    lens = np.ceil(dims/voxel_size, dtype=int)
 
-    # calculate the offsets in each dimension
-    x_offset = min_x
-    y_offset = min_y
-    z_offset = min_z
-
-    return voxel_size, len_x, len_y, len_z, x_offset, y_offset, z_offset
+    return voxel_size, lens
 
 def estimate_voxel_grid(max_x: float, max_y: float, max_z: float,
                         min_x: float, min_y: float, min_z: float,
