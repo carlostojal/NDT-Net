@@ -100,10 +100,6 @@ int to_point_cloud(struct normal_distribution_t *nd_array,
                 if(nd_array[index].num_samples == 0)
                     continue;
 
-                // get the point in metric space
-                double point[3];
-                voxel_to_metric_space(x, y, z, len_x, len_y, len_z, x_offset, y_offset, z_offset, voxel_size, point);
-
                 // copy the point to the downsampled point cloud
                 memcpy(&point_cloud[(*num_points)*3], nd_array[index].mean, 3 * sizeof(double));
 
