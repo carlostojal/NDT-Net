@@ -1,7 +1,7 @@
 import numpy as np
 from typing import List, Tuple
 import bisect
-from core1.normal_distributions import NormalDistribution
+from ndtnetpp.preprocessing.core.normal_distributions import NormalDistribution
 
 """
  MIT License

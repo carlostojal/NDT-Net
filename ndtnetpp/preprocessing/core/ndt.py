@@ -1,9 +1,8 @@
 import numpy as np
 from typing import List, Tuple
-from core1.normal_distributions import NormalDistribution, estimate_ndt
-from core1.kullback_leibler import KullbackLeiblerDivergence, calculate_kl_divergences
-from core1.voxel import estimate_voxel_grid
-from core1.voxel import voxel_to_metric_space
+from ndtnetpp.preprocessing.core.normal_distributions import NormalDistribution, estimate_ndt
+from ndtnetpp.preprocessing.core.kullback_leibler import KullbackLeiblerDivergence, calculate_kl_divergences
+from ndtnetpp.preprocessing.core.voxel import estimate_voxel_grid
 
 """
  MIT License
