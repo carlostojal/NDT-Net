@@ -1,7 +1,8 @@
 import numpy as np
-from typing import List
+from typing import List, Tuple
 from core1.normal_distributions import NormalDistribution
 from core1.kullback_leibler import KullbackLeiblerDivergence, calculate_kl_divergences
+from core1.voxel import voxel_to_metric_space
 
 """
  MIT License
@@ -30,7 +31,6 @@ from core1.kullback_leibler import KullbackLeiblerDivergence, calculate_kl_diver
 
 def prune_nds(nds: np.ndarray[NormalDistribution],
               num_valid_nds: int,
-              lens: np.ndarray,
               num_desired_nds: int,
               kl_divergences: List[KullbackLeiblerDivergence]) -> np.ndarray[NormalDistribution]:
     """
@@ -38,7 +38,6 @@ def prune_nds(nds: np.ndarray[NormalDistribution],
 
     Args:
         nds: The normal distributions.
-        lens: The likelihoods.
         num_desired_nds: The number of normal distributions to keep.
         kl_divergences: The Kullback-Leibler divergences between the normal distributions.
 
@@ -68,3 +67,52 @@ def prune_nds(nds: np.ndarray[NormalDistribution],
         removed += 1
 
     return nds
+
+
+def to_point_cloud(nds: np.ndarray[NormalDistribution],
+                   lens: np.ndarray[int],
+                   min_limits: np.ndarray[float],
+                   voxel_size: float) -> Tuple[np.ndarray[float], np.ndarray[float], np.ndarray[float]]:
+    """
+    Convert normal distributions to a point cloud.
+
+    Args:
+        nds: The normal distributions.
+        lens: The number of samples per normal distribution.
+        min_limits: The minimum limits of the point cloud.
+        voxel_size: The size of the voxels.
+
+    Returns:
+        Tuple[np.ndarray[float], np.ndarray[float], np.ndarray[float]]: The point cloud, the covariances and the classes.
+    """
+
+    points: List[np.ndarray] = []
+    covariances: List[np.ndarray] = []
+    classes: List[np.ndarray] = []
+
+    # iterate the grid
+    for i in range(nds.shape[0]):
+        for j in range(nds.shape[1]):
+            for k in range(nds.shape[2]):
+
+                # verify if the distribution has samples
+                if nds[i, j, k].num_samples == 0:
+                    continue
+
+                # get the point
+                point = nds[i, j, k].mean_
+                points.append(point)
+
+                # get the covariance
+                covariance = nds[i, j, k].covariance
+                covariances.append(covariance)
+
+                cls = nds[i, j, k].class_tag
+                if cls == -1:
+                    cls = 0
+                # create a one-hot encoding of the class
+                cls1 = np.zeros(nds[i, j, k].num_classes)
+                cls1[cls] = 1
+                classes.append(cls1)
+
+    return np.array(points, dtype=float), np.array(covariances, dtype=float), np.array(classes, dtype=float)
