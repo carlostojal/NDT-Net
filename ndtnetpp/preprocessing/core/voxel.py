@@ -100,7 +100,7 @@ def metric_to_voxel_space(point: np.ndarray, voxel_size: float,
 
     Args:
         point (ndarray): Point coordinates in metric space.
-        voxel_size (flaot): Voxel size.
+        voxel_size (float): Voxel size.
         lens (ndarray): Voxel grid dimensions.
         min_limits (ndarray): Minimum limits of the coordinates in each dimension.
 
