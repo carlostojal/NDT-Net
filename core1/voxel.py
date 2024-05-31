@@ -64,3 +64,39 @@ def estimate_voxel_size(num_desired_voxels: int,
     z_offset = min_z
 
     return voxel_size, len_x, len_y, len_z, x_offset, y_offset, z_offset
+
+def estimate_voxel_grid(max_x: float, max_y: float, max_z: float,
+                        min_x: float, min_y: float, min_z: float,
+                        voxel_size: float) -> Tuple[int, int, int, float, float, float]:
+    """
+    Estimate the voxel grid for a given voxel size, given space dimensions.
+
+    Args:
+        max_x (float): Maximum x coordinate.
+        max_y (float): Maximum y coordinate.
+        max_z (float): Maximum z coordinate.
+        min_x (float): Minimum x coordinate.
+        min_y (float): Minimum y coordinate.
+        min_z (float): Minimum z coordinate.
+        voxel_size (float): Voxel size.
+
+    Returns:
+        Tuple[int, int, int, float, float, float]: Tuple containing the number of voxels in each dimension and the offsets in each dimension.
+    """
+
+    # calculate the lengths in each dimension
+    x_dim = max_x - min_x
+    y_dim = max_y - min_y
+    z_dim = max_z - min_z
+
+    # calculate the number of voxels in each dimension
+    len_x = int(ceil(x_dim / voxel_size))
+    len_y = int(ceil(y_dim / voxel_size))
+    len_z = int(ceil(z_dim / voxel_size))
+
+    # calculate the offsets in each dimension
+    x_offset = min_x
+    y_offset = min_y
+    z_offset = min_z
+
+    return len_x, len_y, len_z, x_offset, y_offset, z_offset
