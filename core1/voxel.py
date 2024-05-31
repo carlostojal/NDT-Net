@@ -1,5 +1,5 @@
 import numpy as np
-from math import ceil
+from math import ceil, floor
 from numba import njit, jit, float64, uint32, int32
 from typing import Tuple, List
 
@@ -31,7 +31,7 @@ from typing import Tuple, List
 
 def estimate_voxel_size(num_desired_voxels: int,
                         max_limits: np.ndarray,
-                        min_limits: np.ndarray) -> Tuple[float, np.ndarray, np.ndarray]:
+                        min_limits: np.ndarray) -> Tuple[float, np.ndarray]:
     """
     Estimate the voxel size for a given number of desired voxels, given space dimensions.
 
@@ -48,45 +48,57 @@ def estimate_voxel_size(num_desired_voxels: int,
     dims = max_limits - min_limits
 
     # calculate the voxel size
-    voxel_size = np.prod(dims) / num_desired_voxels
+    voxel_size: float = np.prod(dims) / num_desired_voxels
 
     # calculate the number of voxels in each dimension
-    lens = np.ceil(dims/voxel_size, dtype=int)
+    lens: np.ndarray = np.ceil(dims/voxel_size, dtype=int)
 
     return voxel_size, lens
 
-def estimate_voxel_grid(max_x: float, max_y: float, max_z: float,
-                        min_x: float, min_y: float, min_z: float,
-                        voxel_size: float) -> Tuple[int, int, int, float, float, float]:
+
+def estimate_voxel_grid(max_limits: np.ndarray,
+                        min_limits: np.ndarray,
+                        voxel_size: float) -> np.ndarray:
     """
     Estimate the voxel grid for a given voxel size, given space dimensions.
 
     Args:
-        max_x (float): Maximum x coordinate.
-        max_y (float): Maximum y coordinate.
-        max_z (float): Maximum z coordinate.
-        min_x (float): Minimum x coordinate.
-        min_y (float): Minimum y coordinate.
-        min_z (float): Minimum z coordinate.
+        max_limits (ndarray): Maximum limits of the coordinates in each dimension.
+        min_limits (ndarray): Minimum limits of the coordinates in each dimension.
         voxel_size (float): Voxel size.
 
     Returns:
-        Tuple[int, int, int, float, float, float]: Tuple containing the number of voxels in each dimension and the offsets in each dimension.
+        ndarray: Voxel grid dimensions.
     """
 
-    # calculate the lengths in each dimension
-    x_dim = max_x - min_x
-    y_dim = max_y - min_y
-    z_dim = max_z - min_z
+    # calculate the lengths
+    dims = max_limits - min_limits
 
     # calculate the number of voxels in each dimension
-    len_x = int(ceil(x_dim / voxel_size))
-    len_y = int(ceil(y_dim / voxel_size))
-    len_z = int(ceil(z_dim / voxel_size))
+    lens = np.ceil(dims/voxel_size).astype(int)
 
-    # calculate the offsets in each dimension
-    x_offset = min_x
-    y_offset = min_y
-    z_offset = min_z
+    return lens
 
-    return len_x, len_y, len_z, x_offset, y_offset, z_offset
+def metric_to_voxel_space(point: np.ndarray, voxel_size: float,
+                          lens: np.ndarray,
+                          min_limits: np.ndarray) -> np.ndarray:
+    """
+    Convert a point from metric space to voxel space.
+
+    Args:
+        point (ndarray): Point coordinates in metric space.
+        voxel_size (flaot): Voxel size.
+        lens (ndarray): Voxel grid dimensions.
+        min_limits (ndarray): Minimum limits of the coordinates in each dimension.
+
+    Returns:
+        ndarray: Point coordinates in voxel space.
+    """
+    
+    # calculate the voxel indexes
+    indexes = np.floor((point - min_limits) / voxel_size).astype(int)
+
+    if np.any(indexes < 0) or np.any(indexes >= lens):
+        raise ValueError("Point is outside the voxel grid.")
+
+    return indexes
