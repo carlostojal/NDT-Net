@@ -102,3 +102,24 @@ def metric_to_voxel_space(point: np.ndarray, voxel_size: float,
         raise ValueError("Point is outside the voxel grid.")
 
     return indexes
+
+def voxel_to_metric_space(voxel: np.ndarray,
+                          lens: np.ndarray,
+                          min_limits: np.ndarray,
+                          voxel_size: float) -> np.ndarray:
+    """
+    Convert a voxel from voxel space to metric space.
+
+    Args:
+        voxel (ndarray): Voxel coordinates in voxel space.
+        lens (ndarray): Voxel grid dimensions.
+        min_limits (ndarray): Minimum limits of the coordinates in each dimension.
+        voxel_size (flaot): Voxel size.
+
+    Returns:
+        ndarray: Voxel coordinates in metric space.
+    """
+
+    point: np.ndarray = (voxel * voxel_size) + (voxel_size / 2) + min_limits
+
+    return point
