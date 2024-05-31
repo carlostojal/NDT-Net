@@ -1,7 +1,6 @@
 import torch
 from torch import nn
 import numpy as np
-from ..preprocessing.ndt import NDT_Sampler
 
 class TNet(nn.Module):
     """
@@ -66,14 +65,11 @@ class PointNet(nn.Module):
     PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation
     """
 
-    def __init__(self, point_dim: int = 3, num_points: int = 4096) -> None:
+    def __init__(self, point_dim: int = 3) -> None:
         super().__init__()
-
-        self.sampler: NDT_Sampler = None
 
         self.point_dim = point_dim
         self.covariance_dim = point_dim**2
-        self.num_points = num_points
 
         self.conv1 = nn.Conv1d(self.point_dim+self.covariance_dim, 64, 1)
         self.conv2 = nn.Conv1d(64, 128, 1)
@@ -87,40 +83,18 @@ class PointNet(nn.Module):
         self.t2 = TNet(in_dim=64)
 
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, points: torch.Tensor, covariances: torch.Tensor) -> torch.Tensor:
         """
         Forward pass of the PointNet
 
         Args:
-        - x (torch.Tensor): the input point cloud (shape: [batch_size, num_points, point_dim])
+        - points (torch.Tensor): the points tensor, shaped (batch_size, num_points, point_dim)
+        - covariances (torch.Tensor): the covariances tensor, shaped (batch_size, num_points, covariance_dim)
 
         Returns:
         - torch.Tensor: the output of the PointNet
         """
-
-        # create a points tensor
-        points = torch.zeros(x.size(0), self.num_points, self.point_dim)
-        points = points.to(x.device)
-
-        # create a covariances tensor
-        covariances = torch.zeros(x.size(0), self.num_points, self.covariance_dim)
-        covariances = covariances.to(x.device)
-
-        # iterate over the batch
-        for i in range(x.size(0)):
-            # create a sampler instance
-            self.sampler = NDT_Sampler(x[i].cpu().numpy().astype(np.float64))
-
-            # downsample the points to the desired number of points
-            # convert the points to a numpy array
-            downsampled_points, cov, _ = self.sampler.downsample(self.num_points)
-
-            # add the covariances to the tensor
-            covariances[i] = torch.from_numpy(cov).to(x.device)
-
-            # convert the downsampled points to a tensor
-            points[i] = torch.from_numpy(downsampled_points).to(x.device)
-
+        
         # concatenate the covariances to the input tensor, making 12-dimensional points
         x = torch.cat((points, covariances), dim=2)
 
@@ -166,22 +140,21 @@ class PointNet(nn.Module):
 
 class PointNetClassification(nn.Module):
 
-    def __init__(self, point_dim: int = 3, num_points: int = 4096, num_classes: int = 512) -> None:
+    def __init__(self, point_dim: int = 3, num_classes: int = 512) -> None:
         super().__init__()
 
         self.point_dim = point_dim
-        self.num_points = num_points
         self.num_classes = num_classes
 
-        self.feature_extractor = PointNet(point_dim, num_points)
+        self.feature_extractor = PointNet(point_dim)
 
         self.conv1 = nn.Conv1d(1024, 512, 1)
         self.conv2 = nn.Conv1d(512, 256, 1)
         self.conv3 = nn.Conv1d(256, num_classes, 1)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, points: torch.Tensor, covariances: torch.Tensor) -> torch.Tensor:
         # extract features
-        x, _ = self.feature_extractor(x)
+        x, _ = self.feature_extractor(points, covariances)
 
         # max pooling
         x = torch.max(x, 2, keepdim=True)[0]
@@ -211,10 +184,10 @@ class PointNetSegmentation(nn.Module):
         self.conv3 = nn.Conv1d(256, 128, 1)
         self.conv4 = nn.Conv1d(128, num_classes, 1)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, points: torch.Tensor, covariances: torch.Tensor) -> torch.Tensor:
 
         # extract features
-        x, x_t2 = self.feature_extractor(x)
+        x, x_t2 = self.feature_extractor(points, covariances)
 
         # max pooling
         x, _ = torch.max(x, 2, keepdim=True) # (batch_size, 1024, 1) shape
