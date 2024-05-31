@@ -62,5 +62,5 @@ void get_pointcloud_limits(double *point_cloud, short point_dim, unsigned long n
         *min_z = minf(point_cloud[i*point_dim + 2], *min_z);        
     }
 
-    printf("Limits [%f %f], [%f %f], [%f %f]\n", *min_x, *max_x, *min_y, *max_y, *min_z, *max_z);
+    // printf("Limits [%f %f], [%f %f], [%f %f]\n", *min_x, *max_x, *min_y, *max_y, *min_z, *max_z);
 }
