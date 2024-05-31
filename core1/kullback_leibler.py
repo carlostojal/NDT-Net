@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List
+from typing import List, Tuple
 import bisect
 from core1.normal_distributions import NormalDistribution
 
@@ -53,7 +53,7 @@ class KullbackLeiblerDivergence:
 
 
 def calculate_kl_divergences(grid: np.ndarray[NormalDistribution],
-                             lens: np.ndarray) -> List[KullbackLeiblerDivergence]:
+                             lens: np.ndarray) -> Tuple[List[KullbackLeiblerDivergence], int]:
     """
     Calculate the Kullback-Leibler divergence between neighboring distributions in the grid.
 
@@ -62,10 +62,11 @@ def calculate_kl_divergences(grid: np.ndarray[NormalDistribution],
         lens (np.ndarray): The size of the grid in each dimension.
 
     Returns:
-        List[KullbackLeiblerDivergence]: An ordered list of Kullback-Leibler divergences.
+        Tuple[List[KullbackLeiblerDivergence], int]: The divergences and the number of valid normal distributions.
     """
 
     divergences: List[KullbackLeiblerDivergence] = []
+    num_valid_nds: int = 0
 
     # iterate the grid
     for i in range(grid.shape[0]):
@@ -73,6 +74,11 @@ def calculate_kl_divergences(grid: np.ndarray[NormalDistribution],
             for k in range(grid.shape[2]):
                 # get the current distribution
                 current = grid[i, j, k]
+
+                if current.num_samples == 0:
+                    continue
+
+                num_valid_nds += 1
 
                 # get the neighbors
                 neighbors = []
@@ -96,4 +102,4 @@ def calculate_kl_divergences(grid: np.ndarray[NormalDistribution],
                     # add the divergence to the list based on its "divergence" property
                     bisect.insort(divergences, divergence, key=lambda x: x.divergence)
 
-    return divergences
+    return divergences, num_valid_nds
