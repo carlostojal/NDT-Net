@@ -25,8 +25,8 @@ class kl_divergence_t(ctypes.Structure):
         {"q": ctypes.POINTER(normal_distribution_t)}
     ]
 
-# import the core shared library
-core = ctypes.cdll.LoadLibrary('core/build/libndtnetpp.so')
+# import the core_old shared library
+core = ctypes.cdll.LoadLibrary('core_old/build/libndtnetpp.so')
 
 class NDT_Sampler:
     """A class to downsample point clouds using the Normal Distribution Transform (NDT) algorithm."""
