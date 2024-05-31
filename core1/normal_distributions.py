@@ -1,4 +1,5 @@
 import numpy as np
+from typing import Tuple
 from threading import Thread, Lock, Condition
 from core1.voxel import metric_to_voxel_space
 
@@ -40,17 +41,17 @@ class NormalDistribution:
             index: The index of the distribution.
             num_classes: The total number of classes.
         """
-        self.index = index
-        self.mean = np.zeros(3, dtype=np.float64)
-        self.old_mean = np.zeros(3, dtype=np.float64)
-        self.covariance = np.zeros((3, 3), dtype=np.float64)
-        self.m2 = np.zeros(3, dtype=np.float64)  # sum of squared differences
+        self.index: np.ndarray = index
+        self.mean_: np.ndarray = np.zeros(3, dtype=np.float64)
+        self.old_mean: np.ndarray = np.zeros(3, dtype=np.float64)
+        self.covariance: np.ndarray = np.zeros((3, 3), dtype=np.float64)
+        self.m2: np.ndarray = np.zeros(3, dtype=np.float64)  # sum of squared differences
         self.num_samples: int = 0
-        self.num_classes = num_classes
+        self.num_classes: int = num_classes
         self.class_tag: int = -1
         self.class_samples = None
         if num_classes != -1:
-            self.class_samples = np.zeros(num_classes, dtype=np.int32)  # number of samples per class
+            self.class_samples: np.ndarray = np.zeros(num_classes, dtype=np.int32)  # number of samples per class
         self.lock = Lock()  # mutex lock
         self.cv = Condition(self.lock)  # condition variable
         self.being_updated = False
@@ -80,11 +81,11 @@ class NormalDistribution:
             self.num_samples += 1
 
             # copy the old mean
-            self.old_mean = self.mean.copy()
+            self.old_mean = self.mean_.copy()
 
             # update the mean and covariance
-            self.mean += (sample - self.mean) / self.num_samples
-            self.m2 += (sample - self.mean) * (sample - self.old_mean)
+            self.mean_ += (sample - self.mean_) / self.num_samples
+            self.m2 += (sample - self.mean_) * (sample - self.old_mean)
             self.covariance = self.m2 / self.num_samples
 
             # update the class tag
@@ -108,7 +109,7 @@ def estimate_ndt(pointcloud: np.ndarray,
                  min_limits: np.ndarray,
                  classes: np.ndarray = None,
                  num_classes: int = -1,
-                 num_workers: int = 8) -> np.ndarray:
+                 num_workers: int = 8) -> Tuple[np.ndarray, int]:
     """
     Estimate the Normal Distribution Transform (NDT) of a point cloud for a given voxel size.
 
@@ -122,7 +123,7 @@ def estimate_ndt(pointcloud: np.ndarray,
         num_workers: The number of worker threads.
 
     Returns:
-        The Normal Distributions grid.
+        Tuple[np.ndarray, int]: The NDT grid and the number of valid normal distributions.
     """
 
     def ndt_thread(start_: int,
@@ -162,5 +163,13 @@ def estimate_ndt(pointcloud: np.ndarray,
     for thread in threads:
         thread.join()
 
-    return grid
+    # count the number of valid normal distributions
+    num_valid_nds = 0
+    for i in range(lens[0]):
+        for j in range(lens[1]):
+            for k in range(lens[2]):
+                if grid[i, j, k].num_samples > 0:
+                    num_valid_nds += 1
+
+    return grid, num_valid_nds
 

@@ -43,11 +43,11 @@ class KullbackLeiblerDivergence:
         return self.div_val
 
     def compute(self) -> float:
-        a = np.transpose(self.q.mean - self.p.mean) * np.linalg.inv(self.q.covariance) * (self.q.mean - self.p.mean)
+        a = np.transpose(self.q.mean_ - self.p.mean_) * np.linalg.inv(self.q.covariance) * (self.q.mean_ - self.p.mean_)
         b = np.trace(np.linalg.inv(self.q.covariance) * self.p.covariance)
         c = np.log(np.linalg.det(self.q.covariance) / np.linalg.det(self.p.covariance))
 
-        self.div_val = 0.5 * (a + b + c - self.p.mean.shape[0])
+        self.div_val = 0.5 * (a + b + c - self.p.mean_.shape[0])
 
         return self.div_val
 
