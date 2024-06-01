@@ -64,6 +64,35 @@ class NDT_Sampler:
 
         self.voxel_size = ctypes.pointer(ctypes.c_double(0.0))
 
+        self.destroyed = False
+
+
+    def cleanup(self) -> None:
+
+        del self.pointcloud
+        del self.covariances
+        del self.classes
+        del self.len_x
+        del self.len_y
+        del self.len_z
+        del self.offset_x
+        del self.offset_y
+        del self.offset_z
+        del self.voxel_size
+
+        # free the normal distribution array
+        core.free_nds(self.nd_array_ptr, self.num_points)
+
+        # free the Kullback-Leibler divergence array
+        core.free_kl_divergences(self.kl_divergences_ptr)
+
+        del self.nd_array_ptr
+        del self.num_valid_nds
+        del self.kl_divergences_ptr
+        del self.num_kl_divergences
+
+        self.destroyed = True
+
 
     def __del__(self) -> None:
         """
@@ -72,11 +101,10 @@ class NDT_Sampler:
         Returns:
             None
         """
-        # free the normal distribution array
-        core.free_nds(self.nd_array_ptr, self.num_points)
 
-        # free the Kullback-Leibler divergence array
-        core.free_kl_divergences(self.kl_divergences_ptr)
+
+        if not self.destroyed:
+            self.cleanup()
     
     
     def downsample(self, num_desired_points: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -91,27 +119,27 @@ class NDT_Sampler:
         """
 
         # create the point cloud pointer
-        pcl_ptr = self.pointcloud.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+        self.pcl_ptr = self.pointcloud.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
 
         # create a new point cloud array
-        new_pcl = np.zeros((num_desired_points, 3))
-        new_pcl_ptr = new_pcl.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+        self.new_pcl = np.zeros((num_desired_points, 3), dtype=np.float64)
+        self.new_pcl_ptr = self.new_pcl.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
 
         # create a pointer to store the number of downsampled points
-        num_downsampled_points = ctypes.pointer(ctypes.c_ulong(0))
+        self.num_downsampled_points = ctypes.pointer(ctypes.c_ulong(0))
 
         # create a pointer to the classes array
-        classes_ptr = None
+        self.classes_ptr = None
         if self.classes is not None:
-            classes_ptr = self.classes.ctypes.data_as(ctypes.POINTER(ctypes.c_ushort))
+            self.classes_ptr = self.classes.ctypes.data_as(ctypes.POINTER(ctypes.c_ushort))
 
         # create a pointer to the new classes array
-        new_classes = np.zeros(num_desired_points, dtype=np.int16)
-        new_classes_ptr = new_classes.ctypes.data_as(ctypes.POINTER(ctypes.c_ushort))
+        self.new_classes = np.zeros(num_desired_points, dtype=np.int16)
+        self.new_classes_ptr = self.new_classes.ctypes.data_as(ctypes.POINTER(ctypes.c_ushort))
 
         # create a pointer for the covariance
-        covariances = np.zeros((num_desired_points, 9), dtype=np.float64)
-        covariances_ptr = covariances.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+        self.covs = np.zeros((num_desired_points, 9), dtype=np.float64)
+        self.covariances_ptr = self.covs.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
 
         # set the argument types
         core.ndt_downsample.argtypes = [
@@ -129,31 +157,43 @@ class NDT_Sampler:
         ]
 
         # create a normal distribution array pointer reference
-        nd_array_ptr_ref = ctypes.pointer(self.nd_array_ptr)
+        self.nd_array_ptr_ref = ctypes.pointer(self.nd_array_ptr)
 
         # create a divergence array pointer reference
-        kl_divergences_ptr_ref = ctypes.pointer(self.kl_divergences_ptr)
+        self.kl_divergences_ptr_ref = ctypes.pointer(self.kl_divergences_ptr)
 
         # downsample the point cloud
-        core.ndt_downsample(pcl_ptr, 3, self.num_points,
+        core.ndt_downsample(self.pcl_ptr, 3, self.num_points,
                             self.len_x, self.len_y, self.len_z,
                             self.offset_x, self.offset_y, self.offset_z,
                             self.voxel_size,
-                            classes_ptr, self.num_classes,
+                            self.classes_ptr, self.num_classes,
                             num_desired_points, 
-                            new_pcl_ptr, num_downsampled_points,
-                            covariances_ptr,
-                            new_classes_ptr,
-                            nd_array_ptr_ref, self.num_valid_nds,
-                            kl_divergences_ptr_ref, self.num_kl_divergences)
+                            self.new_pcl_ptr, self.num_downsampled_points,
+                            self.covariances_ptr,
+                            self.new_classes_ptr,
+                            self.nd_array_ptr_ref, self.num_valid_nds,
+                            self.kl_divergences_ptr_ref, self.num_kl_divergences)
         
         self.num_points = num_desired_points
 
-        self.pointcloud = new_pcl
-        self.covariances = covariances
-        self.classes = new_classes
+        self.pointcloud = self.new_pcl.copy()
+        self.covariances = self.covs.copy()
+        self.classes = self.new_classes.copy()
+
+        del self.new_pcl
+        del self.new_pcl_ptr
+        del self.covs
+        del self.covariances_ptr
+        del self.classes_ptr
+        del self.new_classes
+        del self.new_classes_ptr
+        del self.pcl_ptr
+        del self.num_downsampled_points
+        del self.nd_array_ptr_ref
+        del self.kl_divergences_ptr_ref
         
-        return new_pcl, covariances, new_classes
+        return self.pointcloud, self.covariances, self.classes
 
     def prune(self, new_desired_points: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
@@ -194,8 +234,6 @@ class NDT_Sampler:
         # create a pointer for the new classes
         new_classes = np.zeros(new_desired_points, dtype=np.int16)
         new_classes_ptr = new_classes.ctypes.data_as(ctypes.POINTER(ctypes.c_ushort))
-
-        print(self.offset_x.contents.value, self.offset_y.contents.value, self.offset_z.contents.value, self.voxel_size.contents.value)
 
         # set the argument types
         core.to_point_cloud.argtypes = [
