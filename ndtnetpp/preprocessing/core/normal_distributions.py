@@ -51,7 +51,7 @@ class NormalDistribution:
         self.class_tag: int = -1
         self.class_samples = None
         if num_classes != -1:
-            self.class_samples: np.ndarray = np.zeros(num_classes, dtype=np.int32)  # number of samples per class
+            self.class_samples: np.ndarray = np.zeros(num_classes+1, dtype=np.int32)  # number of samples per class
         self.lock = Lock()  # mutex lock
         self.cv = Condition(self.lock)  # condition variable
         self.being_updated = False
@@ -68,39 +68,39 @@ class NormalDistribution:
             None
         """
 
-        # acquire the lock
-        with self.lock:
-            # wait until the distribution is not being updated
-            while self.being_updated:
-                self.cv.wait()
+        # set the distribution as being updated
+        self.being_updated = True
 
-            # set the distribution as being updated
-            self.being_updated = True
+        # increment the sample count
+        self.num_samples += 1
 
-            # increment the sample count
-            self.num_samples += 1
+        # copy the old mean
+        self.old_mean = self.mean_.copy()
 
-            # copy the old mean
-            self.old_mean = self.mean_.copy()
+        # update the mean and covariance
+        self.mean_ += (sample - self.mean_) / self.num_samples
+        self.m2 += (sample - self.mean_) * (sample - self.old_mean)
+        # TODO: update the variance and covariance
+        for i in range(3):
+            for j in range(3):
+                # the diagonal elements are the variance
+                if i == j:
+                    self.covariance[i, j] = self.m2[i] / self.num_samples
+                else:
+                    # the off-diagonal elements are the covariance
+                    self.covariance[i, j] += (sample[i] - self.old_mean[i]) * (sample[j] - self.old_mean[j]) / self.num_samples
 
-            # update the mean and covariance
-            self.mean_ += (sample - self.mean_) / self.num_samples
-            self.m2 += (sample - self.mean_) * (sample - self.old_mean)
-            self.covariance = self.m2 / self.num_samples
+
+        # update the class tag
+        if class_tag != -1:
+            # update the class samples
+            self.class_samples[class_tag] += 1
 
             # update the class tag
-            if class_tag != -1:
-                # update the class samples
-                self.class_samples[class_tag] += 1
+            self.class_tag = np.argmax(self.class_samples)
 
-                # update the class tag
-                self.class_tag = np.argmax(self.class_samples)
-
-            # set the distribution as not being updated
-            self.being_updated = False
-
-            # notify the other threads
-            self.cv.notify_all()
+        # set the distribution as not being updated
+        self.being_updated = False
 
 
 def estimate_ndt(pointcloud: np.ndarray,
@@ -126,50 +126,30 @@ def estimate_ndt(pointcloud: np.ndarray,
         Tuple[np.ndarray, int]: The NDT grid and the number of valid normal distributions.
     """
 
-    def ndt_thread(start_: int,
-                   end_: int):
-
-        for idx in range(start_, end_):
-            # get the voxel index
-            voxel_index = metric_to_voxel_space(pointcloud[idx], voxel_size, lens, min_limits)
-
-            # get the class tag
-            class_tag = -1
-            if classes is not None:
-                class_tag = classes[i]
-
-            # update the normal distribution
-            grid[voxel_index].update(pointcloud[idx], class_tag)
-
     # create the grid
     grid = np.empty(lens, dtype=object)
-    for i in range(lens[0]):
-        for j in range(lens[1]):
-            for k in range(lens[2]):
-                grid[i, j, k] = NormalDistribution(np.array([i, j, k]), num_classes)
+    for index in np.ndindex(*lens):
+        grid[index] = NormalDistribution(np.array(index), num_classes)
 
-    # create the worker threads
-    threads = []
-    for i in range(num_workers):
-        start = i * (pointcloud.shape[0] // num_workers)
-        end = (i + 1) * (pointcloud.shape[0] // num_workers)
-        if i == num_workers - 1:
-            end = pointcloud.shape[0]
-        thread = Thread(target=ndt_thread, args=(start, end))
-        threads.append(thread)
-        thread.start()
-
-    # wait for the worker threads to finish
-    for thread in threads:
-        thread.join()
-
-    # count the number of valid normal distributions
     num_valid_nds = 0
-    for i in range(lens[0]):
-        for j in range(lens[1]):
-            for k in range(lens[2]):
-                if grid[i, j, k].num_samples > 0:
-                    num_valid_nds += 1
+
+    # iterate the point cloud
+    for idx in range(pointcloud.shape[0]):
+        # get the voxel index
+        voxel_index = metric_to_voxel_space(pointcloud[idx], voxel_size, lens, min_limits)
+
+        # get the class tag
+        class_tag = -1
+        if classes is not None:
+            class_tag = classes[idx]
+
+        nd: NormalDistribution = grid[tuple(voxel_index)]
+
+        # if the distribution had no previous samples, increment the number of valid normal distributions
+        if nd.num_samples == 0:
+            num_valid_nds += 1
+
+        # update the normal distribution
+        nd.update(pointcloud[idx], class_tag)
 
     return grid, num_valid_nds
-

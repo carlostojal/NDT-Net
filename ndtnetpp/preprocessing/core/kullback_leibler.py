@@ -43,9 +43,21 @@ class KullbackLeiblerDivergence:
         return self.div_val
 
     def compute(self) -> float:
-        a = np.transpose(self.q.mean_ - self.p.mean_) * np.linalg.inv(self.q.covariance) * (self.q.mean_ - self.p.mean_)
-        b = np.trace(np.linalg.inv(self.q.covariance) * self.p.covariance)
-        c = np.log(np.linalg.det(self.q.covariance) / np.linalg.det(self.p.covariance))
+
+        if self.p.num_samples <= 1 or self.q.num_samples <= 1:
+            raise RuntimeError(f"The number of samples in the distributions must be greater than 1!"
+                             f" Had {self.p.num_samples} and {self.q.num_samples}.")
+        
+        # verify singular matrices
+        if np.linalg.matrix_rank(self.p.covariance) < self.p.mean_.shape[0] or np.linalg.matrix_rank(self.q.covariance) < self.q.mean_.shape[0] or np.linalg.det(self.p.covariance) == 0 or np.linalg.det(self.q.covariance) == 0:
+            raise RuntimeError(f"The covariance matrices of the distributions are singular!")
+
+        mean_diff = self.q.mean_ - self.p.mean_
+        q_cov_inv = np.linalg.inv(self.q.covariance)
+
+        a = np.matmul(np.matmul(mean_diff.T, q_cov_inv), mean_diff)
+        b = np.trace(np.matmul(q_cov_inv, self.p.covariance))
+        c = np.log(np.linalg.det(self.p.covariance) / np.linalg.det(self.q.covariance))
 
         self.div_val = 0.5 * (a + b + c - self.p.mean_.shape[0])
 
@@ -97,7 +109,14 @@ def calculate_kl_divergences(grid: np.ndarray[NormalDistribution],
 
                 # calculate the Kullback-Leibler divergence
                 for neighbor in neighbors:
-                    divergence = KullbackLeiblerDivergence(current, neighbor)
+
+                    divergence = None
+                    div_value = 0.0
+                    try:
+                        divergence = KullbackLeiblerDivergence(current, neighbor)
+                        div_value = divergence.divergence
+                    except RuntimeError as e:
+                        continue
 
                     # add the divergence to the list based on its "divergence" property
                     bisect.insort(divergences, divergence, key=lambda x: x.divergence)

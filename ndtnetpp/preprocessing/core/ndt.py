@@ -61,31 +61,26 @@ def prune_nds(nds: np.ndarray[NormalDistribution],
         # this normal distribution has no samples or was already removed
         if kl_divergences[0].p.num_samples == 0:
             # remove the Kullback-Leibler divergence from the list
-            kl_divergences.pop()
+            kl_divergences.pop(0)
+            continue
 
         # remove the normal distribution
         kl_divergences[0].p.num_samples = 0
 
         # remove the Kullback-Leibler divergence from the list
-        kl_divergences.pop()
+        kl_divergences.pop(0)
 
         removed += 1
 
     return nds
 
 
-def to_point_cloud(nds: np.ndarray[NormalDistribution],
-                   lens: np.ndarray[int],
-                   min_limits: np.ndarray[float],
-                   voxel_size: float) -> Tuple[np.ndarray[float], np.ndarray[float], np.ndarray[float]]:
+def to_point_cloud(nds: np.ndarray[NormalDistribution]) -> Tuple[np.ndarray[float], np.ndarray[float], np.ndarray[float]]:
     """
     Convert normal distributions to a point cloud.
 
     Args:
         nds: The normal distributions.
-        lens: The number of samples per normal distribution.
-        min_limits: The minimum limits of the point cloud.
-        voxel_size: The size of the voxels.
 
     Returns:
         Tuple[np.ndarray[float], np.ndarray[float], np.ndarray[float]]: The point cloud, the covariances and the classes.
@@ -116,7 +111,7 @@ def to_point_cloud(nds: np.ndarray[NormalDistribution],
                 if cls == -1:
                     cls = 0
                 # create a one-hot encoding of the class
-                cls1 = np.zeros(nds[i, j, k].num_classes)
+                cls1 = np.zeros(nds[i, j, k].num_classes+1)
                 cls1[cls] = 1
                 classes.append(cls1)
 
@@ -178,12 +173,12 @@ def ndt_downsample(pointcloud: np.ndarray,
         raise ValueError("The maximum number of iterations was reached!")
 
     # calculate the Kullback-Leibler divergences
-    kl_divergences, _ = calculate_kl_divergences(nds, lens)
+    kl_divergences, num_valid_nds = calculate_kl_divergences(nds, lens)
 
     # prune the normal distributions
     nds = prune_nds(nds, num_valid_nds, num_desired_points, kl_divergences)
 
     # convert the normal distributions to a point cloud
-    points, covariances, classes = to_point_cloud(nds, lens, min_limits, guess)
+    points, covariances, classes = to_point_cloud(nds)
 
-    return points, covariances, classes
+    return points, covariances.reshape((num_desired_points, 9)), classes
