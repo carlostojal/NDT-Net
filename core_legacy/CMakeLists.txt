@@ -26,6 +26,11 @@ add_executable(tests
     tests/test_pointclouds.cpp
 )
 
+# test ndt downsample
+add_executable(test_ndt_downsample
+    tests/ndt_downsample.c
+)
+
 # set the include directory
 include_directories(include ${GSL_INCLUDE_DIRS} ${OPENMP_INCLUDE_DIRS} ${GTEST_INCLUDE_DIRS})
 
@@ -34,3 +39,5 @@ target_link_libraries(ndtnetpp GSL::gsl GSL::gslcblas ${OPENMP_LIBRARIES})
 
 # link the tests executable
 target_link_libraries(tests GTest::gtest GTest::gtest_main ${OPENMP_LIBRARIES} ndtnetpp)
+
+target_link_libraries(test_ndt_downsample ndtnetpp)
