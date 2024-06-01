@@ -100,28 +100,29 @@ class PointNet(nn.Module):
 
         B, N, D = x.size()
 
-        x = x.transpose(2, 1)
+        x = x.transpose(2, 1) # [B, 12, N]
 
         # input transform
-        p = x[:, :self.point_dim, :] # crop the "point_dim" dimensions
+        p = x[:, :self.point_dim, :] # [B, 3, N]
         t = self.t1(p) # [B, 3, 3]
-        x = x.transpose(2, 1) # [B, N, 12]
         # apply the transformation matrix to the points
-        p = torch.bmm(t, p)
-        p = p.transpose(2, 1)
-        x[:, :, :self.point_dim] = p
+        p = torch.bmm(t, p) # [B, 3, N]
+        p = p.transpose(2, 1) # [B, N, 3]
         # apply the transformation matrix to the covariances
-        print(x.shape)
-        cov = x[:, :, self.point_dim:] # [B, N, 9]
+        cov = x[:, self.point_dim:, ] # [B, 9, N]
         # multiply the transition matrix with the covariances
-        cov = cov.view(B, N, 3, 3)
+        cov = cov.transpose(2, 1) # [B, N, 9]
+        cov = cov.view(B, N, 3, 3) # [B, N, 3, 3]
         cov = torch.matmul(t.unsqueeze(1), cov) # [B, N, 3, 3]
         cov = cov.view(B, N, 9) # [B, N, 9]
-        x[:, :, self.point_dim:] = cov
-        x = x.transpose(2, 1)
+        # concatenate the transformed points and covariances
+        x = torch.cat((p, cov), dim=2) # [B, N, 12]
+        x = x.transpose(2, 1) # [B, 12, N]
 
         # MLP
-        x = self.bn1(self.conv1(x))
+        x = self.conv1(x)
+        x = self.bn1(x)
+        # x = self.bn1(self.conv1(x))
 
         # feature transform
         t = self.t2(x)
@@ -182,7 +183,7 @@ class PointNetSegmentation(nn.Module):
         self.conv1 = nn.Conv1d(1088, 512, 1) # 1088 = 1024 + 64
         self.conv2 = nn.Conv1d(512, 256, 1)
         self.conv3 = nn.Conv1d(256, 128, 1)
-        self.conv4 = nn.Conv1d(128, num_classes, 1)
+        self.conv4 = nn.Conv1d(128, num_classes+1, 1)
 
     def forward(self, points: torch.Tensor, covariances: torch.Tensor) -> torch.Tensor:
 
