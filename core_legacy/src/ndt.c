@@ -146,7 +146,7 @@ int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long 
                             offset_x, offset_y, offset_z);
 
         // allocate the normal distributions
-        *nd_array = (struct normal_distribution_t *) malloc((*len_x) * (*len_y) * (*len_z) * sizeof(struct normal_distribution_t));
+        *nd_array = (struct normal_distribution_t *) realloc(*nd_array, (*len_x) * (*len_y) * (*len_z) * sizeof(struct normal_distribution_t));
         if(*nd_array == NULL) {
             fprintf(stderr, "Error allocating memory for normal distributions: %s\n", strerror(errno));
             return -1;
@@ -175,9 +175,6 @@ int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long 
 
         // get the next guess
         guess = min_guess + (max_guess - min_guess) / 2.0;
-
-        // free the normal distributions
-        free_nds(*nd_array, (*len_x) * (*len_y) * (*len_z));
 
         iter++;
 
