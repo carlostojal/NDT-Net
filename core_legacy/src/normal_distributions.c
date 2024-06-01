@@ -70,6 +70,8 @@ void *pcl_worker(void *arg) {
             }
         }
 
+        args->nd_array[voxel_index].being_updated = true;
+
         // update the normal distribution for the voxel
         args->nd_array[voxel_index].num_samples++;
         // iterate the 3 dimensions of the point sample
@@ -80,21 +82,25 @@ void *pcl_worker(void *arg) {
             args->nd_array[voxel_index].mean[j] += (args->point_cloud[i*3+j] - args->nd_array[voxel_index].mean[j]) / args->nd_array[voxel_index].num_samples;
             // update the sum of squared differences for the variances
             args->nd_array[voxel_index].m2[j] += (args->point_cloud[i*3+j] - args->nd_array[voxel_index].old_mean[j]) * (args->point_cloud[i*3+j] - args->nd_array[voxel_index].mean[j]);
+            // update the variances
+            args->nd_array[voxel_index].covariance[j*3+j] = args->nd_array[voxel_index].m2[j] / args->nd_array[voxel_index].num_samples;
+            if(isnan(args->nd_array[voxel_index].covariance[j*3+j])) {
+                args->nd_array[voxel_index].covariance[j*3+j] = 0.0;
+            }
 
             // iterate the other dimensions to update the covariance matrix
-            for(int k = 0; k < 3; k++) {
-                // it's a diagonal, so it's a variance and not a covariance
+            for(int k = j + 1; k < 3; k++) {
+                // it's the diagonal, it's the variance, already updated
                 if(j == k)
                     continue;
-
                 // update the covariance matrix
-                args->nd_array[voxel_index].covariance[j*3+k] += (args->point_cloud[i*3+j] - args->nd_array[voxel_index].mean[j]) * (args->point_cloud[i*3+k] - args->nd_array[voxel_index].mean[k]) / args->nd_array[voxel_index].num_samples;            
+                args->nd_array[voxel_index].covariance[j*3+k] += (args->point_cloud[i*3+j] - args->nd_array[voxel_index].mean[j]) * (args->point_cloud[i*3+k] - args->nd_array[voxel_index].mean[k]) / args->nd_array[voxel_index].num_samples;
+                if(isnan(args->nd_array[voxel_index].covariance[j*3+k])) {
+                    args->nd_array[voxel_index].covariance[j*3+k] = 0.0;
+                }
+                // mirror the covariance to the other half of the matrix
+                args->nd_array[voxel_index].covariance[k*3+j] = args->nd_array[voxel_index].covariance[j*3+k];
             }
-        }
-
-        // update the variances
-        for(int j = 0; j < 3; j++) {
-            args->nd_array[voxel_index].covariance[j*3+j] = args->nd_array[voxel_index].m2[j] / args->nd_array[voxel_index].num_samples;
         }
 
         // update the class if classes were provided
@@ -113,6 +119,8 @@ void *pcl_worker(void *arg) {
                 }
             }
         }
+
+        args->nd_array[voxel_index].being_updated = false;
         
         // unlock the mutex for the voxel
         if(pthread_mutex_unlock(&args->mutex_array[voxel_index]) != 0) {
