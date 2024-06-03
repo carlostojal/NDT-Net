@@ -120,9 +120,7 @@ class PointNet(nn.Module):
         x = x.transpose(2, 1) # [B, 12, N]
 
         # MLP
-        x = self.conv1(x)
-        x = self.bn1(x)
-        # x = self.bn1(self.conv1(x))
+        x = self.bn1(self.conv1(x))
 
         # feature transform
         t = self.t2(x)
@@ -185,6 +183,10 @@ class PointNetSegmentation(nn.Module):
         self.conv3 = nn.Conv1d(256, 128, 1)
         self.conv4 = nn.Conv1d(128, num_classes+1, 1)
 
+        self.bn1 = nn.BatchNorm1d(512)
+        self.bn2 = nn.BatchNorm1d(256)
+        self.bn3 = nn.BatchNorm1d(128)
+
     def forward(self, points: torch.Tensor, covariances: torch.Tensor) -> torch.Tensor:
 
         # extract features
@@ -200,9 +202,9 @@ class PointNetSegmentation(nn.Module):
         x = torch.cat((x_t2, x), dim=1) # concat to (batch_size, 1088, num_points)
 
         # FC layers
-        x = torch.relu(self.conv1(x))
-        x = torch.relu(self.conv2(x))
-        x = torch.relu(self.conv3(x))
+        x = torch.relu(self.bn1(self.conv1(x)))
+        x = torch.relu(self.bn2(self.conv2(x)))
+        x = torch.relu(self.bn3(self.conv3(x)))
         x = self.conv4(x)
 
         # softmax
