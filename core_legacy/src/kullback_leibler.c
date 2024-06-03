@@ -203,4 +203,5 @@ int calculate_kl_divergences(struct normal_distribution_t *nd_array,
 
 void free_kl_divergences(struct kl_divergence_t *kl_divergences) {
     free(kl_divergences);
+    kl_divergences = NULL;
 }

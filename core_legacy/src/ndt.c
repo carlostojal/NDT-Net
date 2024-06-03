@@ -137,6 +137,8 @@ int ndt_downsample(double *point_cloud, unsigned short point_dim, unsigned long 
     double min_guess = MIN_VOXEL_GUESS;
     double max_guess = MAX_VOXEL_GUESS;
 
+    *nd_array = NULL;
+
     unsigned long num_nds;
     unsigned int iter = 0;
     do {
@@ -219,8 +221,9 @@ void free_nds(struct normal_distribution_t *nd_array, unsigned long num_nds) {
 
     // iterate the normal distributions to free the class samples array
     for(unsigned long i = 0; i < num_nds; i++) {
-        if(nd_array[i].num_samples > 0) {
+        if(nd_array[i].num_class_samples != NULL) {
             free(nd_array[i].num_class_samples);
+            nd_array[i].num_class_samples = NULL;
         }
     }
 
