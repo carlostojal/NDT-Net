@@ -137,7 +137,7 @@ class NDT_Sampler:
             classes_ptr = self.classes.ctypes.data_as(ctypes.POINTER(ctypes.c_ushort))
 
         # create a pointer to the new classes array
-        new_classes = np.zeros(num_desired_points, dtype=np.int16)
+        new_classes = np.zeros(num_desired_points, dtype=np.uint16)
         new_classes_ptr = new_classes.ctypes.data_as(ctypes.POINTER(ctypes.c_ushort))
 
         # create a pointer for the covariance
@@ -165,10 +165,6 @@ class NDT_Sampler:
                             kl_divergences_ptr_ref, self.num_kl_divergences)
         
         self.num_points = num_desired_points
-
-        new_pcl = np.random.rand(num_desired_points, 3)
-        covariances = np.random.rand(num_desired_points, 9)
-        new_classes = np.random.rand(num_desired_points)
 
         # pointcloud: [n_points, 3]
         # covariances: [n_points, 9]
