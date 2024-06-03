@@ -96,7 +96,7 @@ class CARLA_NDT_Seg(Dataset):
             n_points += 1
 
         np_points = np.asarray(points)
-        np_classes = np.asarray(classes)
+        np_classes = np.asarray(classes, dtype=np.uint16)
 
         # sample using NDT
         sampler: NDT_Sampler = NDT_Sampler(np_points, np_classes, self.n_classes)
@@ -114,7 +114,7 @@ class CARLA_NDT_Seg(Dataset):
         # make the ground truth tensor with one-hot encoding
         gt = torch.zeros((classes.shape[0], self.n_classes+1)).float()
         for i in range(classes.shape[0]):
-            gt[i, torch.argmax(classes[i])] = 1
+            gt[i, int(classes[i])] = 1
 
         # points: [n_points, 3]
         # covariances: [n_points, 9]

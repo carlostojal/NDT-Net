@@ -57,7 +57,6 @@ if __name__ == '__main__':
     optimizer = torch.optim.Adam(model.parameters(), lr=float(args.learning_rate))
 
     # initialize wandb
-    """
     print("Initializing wandb...", end=" ")
     wandb.init(project="ndtnetpp", 
         config={
@@ -68,7 +67,6 @@ if __name__ == '__main__':
             "n_classes": args.n_classes,
             "optimizer": "Adam"
     })
-    """
     print("done.")
     
     # training loop
