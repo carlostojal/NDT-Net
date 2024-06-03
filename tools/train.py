@@ -36,7 +36,7 @@ if __name__ == '__main__':
     
     # create the data loaders
     print("Creating the data loaders...", end=" ")
-    train_loader = DataLoader(train_set, batch_size=int(args.batch_size), shuffle=True, pin_memory=True)
+    train_loader = DataLoader(train_set, batch_size=int(args.batch_size), shuffle=True, pin_memory=True, num_workers=4)
     val_loader = DataLoader(val_set, batch_size=int(args.batch_size), shuffle=False)
     test_loader = DataLoader(test_set, batch_size=int(args.batch_size), shuffle=False)
     print("done.")
@@ -73,10 +73,12 @@ if __name__ == '__main__':
     
     # training loop
     for epoch in range(int(args.epochs)):
+
         print(f"--- EPOCH {epoch+1}/{args.epochs} ---")
         # set the model to training mode
         model.train()
         curr_sample = 0
+        loss_per_sample = 0
         for i, (pcl, covs, gt) in enumerate(train_loader):
             # move the data to the device
             pcl = pcl.to(device)
@@ -92,22 +94,22 @@ if __name__ == '__main__':
             loss = torch.nn.functional.cross_entropy(pred, gt)
 
             # backward pass
+            optimizer.zero_grad()
             loss.backward()
 
             # update the weights
             optimizer.step()
 
             # get the loss per sample
-            loss_per_sample = loss / int(args.batch_size)
+            loss_per_sample = (loss / int(args.batch_size)).item()
 
             # log the loss
-            print(f"\rTrain Loss ({curr_sample}/{len(train_loader)*int(args.batch_size)}): {loss_per_sample.item()}", end="")
+            print(f"\rTrain Loss ({curr_sample}/{len(train_loader)*int(args.batch_size)}): {loss_per_sample}", end="")
 
-            del pcl, covs, gt, pred, loss_per_sample
         print()
 
         # log the loss to wandb
-        wandb.log({"train_loss": loss.item()})
+        wandb.log({"train_loss": loss_per_sample})
 
         # validation
         # set the model to evaluation mode
@@ -116,6 +118,7 @@ if __name__ == '__main__':
         # disable gradient computation
         with torch.no_grad():
             for i, (pcl, covs, gt) in enumerate(val_loader):
+
                 # move the data to the device
                 pcl = pcl.to(device)
                 covs = covs.to(device)
@@ -133,7 +136,6 @@ if __name__ == '__main__':
                 # log the loss
                 print(f"\rValidation Loss: {loss_per_sample.item()}", end="")
 
-                del pcl, covs, gt, pred, loss_per_sample
             print()
         
         # log the loss to wandb
@@ -164,7 +166,6 @@ if __name__ == '__main__':
             # log the loss
             print(f"\rTest Loss: {loss_per_sample.item()}", end="")
 
-            del pcl, covs, gt, pred, loss_per_sample
     print()
 
     # log the loss to wandb

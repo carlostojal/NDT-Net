@@ -192,7 +192,6 @@ class PointNetSegmentation(nn.Module):
 
         # max pooling
         x, _ = torch.max(x, 2, keepdim=True) # (batch_size, 1024, 1) shape
-        del _
 
         # repeat the max-pooled features
         x = x.expand(-1, -1, x_t2.shape[2]) # expand to (batch_size, 1024, num_points)

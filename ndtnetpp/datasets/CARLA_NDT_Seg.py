@@ -88,30 +88,24 @@ class CARLA_NDT_Seg(Dataset):
                 raise ValueError(f"Class tag {class_tag} out of bounds")
 
             # append the point coordinates to the points list
-            points.append([x, y, z])
+            points.append(np.array([x, y, z]))
 
             # append the class to the classes list
             classes.append(class_tag)
 
             n_points += 1
 
-        points = np.asarray(points)
-        classes = np.asarray(classes)
-        covariances = np.zeros((points.shape[0], 3, 3))
+        np_points = np.asarray(points)
+        np_classes = np.asarray(classes)
 
         # sample using NDT
-        sampler: NDT_Sampler = NDT_Sampler(points, classes, self.n_classes)
-        new_points, new_covariances, new_classes = sampler.downsample(self.n_desired_nds)
-        del points, covariances, classes
-        points = new_points
-        covariances = new_covariances
-        classes = new_classes
+        sampler: NDT_Sampler = NDT_Sampler(np_points, np_classes, self.n_classes)
+        np_points1, np_covariances1, np_classes1 = sampler.downsample(self.n_desired_nds)
         sampler.cleanup()
-        del sampler
 
-        points = torch.tensor(points).float()
-        covariances = torch.tensor(covariances).float()
-        classes = torch.tensor(classes).float()
+        points = torch.tensor(np_points1).float()
+        covariances = torch.tensor(np_covariances1).float()
+        classes = torch.tensor(np_classes1).float()
 
         # replace NaN values with zeros
         points[torch.isnan(points)] = 0
@@ -121,7 +115,10 @@ class CARLA_NDT_Seg(Dataset):
         gt = torch.zeros((classes.shape[0], self.n_classes+1)).float()
         for i in range(classes.shape[0]):
             gt[i, torch.argmax(classes[i])] = 1
-        del classes
 
-        # return the matrices as tensors
+        # points: [n_points, 3]
+        # covariances: [n_points, 9]
+        # gt: [n_points, n_classes+1]
+
+        # return the tensors
         return points, covariances, gt
