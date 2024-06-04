@@ -19,8 +19,8 @@ if __name__ == '__main__':
     parser.add_argument("--out_path", type=str, help="Path to save the model", default="out", required=False)
     parser.add_argument("--epochs", type=int, help="Number of epochs", default=200, required=False)
     parser.add_argument("--save_every", type=int, help="Save the model every n epochs", default=10, required=False)
-    parser.add_argument("--batch_size", type=int, help="Batch size", default=4, required=False)
-    parser.add_argument("--learning_rate", type=float, help="Learning rate", default=0.001, required=False)
+    parser.add_argument("--batch_size", type=int, help="Batch size", default=16, required=False)
+    parser.add_argument("--learning_rate", type=float, help="Learning rate", default=0.034, required=False)
     parser.add_argument("--n_classes", type=int, help="Number of classes. Don't count with unknown/no class", default=28, required=False)
     args = parser.parse_args()
 
