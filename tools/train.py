@@ -70,6 +70,8 @@ if __name__ == '__main__':
             "optimizer": "Adam"
     })
     print("done.")
+
+    LEARNING_RATE = args.learning_rate
     
     # training loop
     for epoch in range(int(args.epochs)):
@@ -84,6 +86,12 @@ if __name__ == '__main__':
             pcl = pcl.to(device)
             covs = covs.to(device)
             gt = gt.to(device)
+
+            # adjust learning rate
+            if epoch+1 % 20 == 0:
+                LEARNING_RATE *= 0.5
+                for param_group in optimizer.param_groups:
+                    param_group['lr'] = LEARNING_RATE
 
             curr_sample += int(args.batch_size)
 
