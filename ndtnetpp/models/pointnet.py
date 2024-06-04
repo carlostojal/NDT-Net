@@ -208,7 +208,7 @@ class PointNetSegmentation(nn.Module):
         x = self.conv4(x)
 
         # softmax
-        x = torch.softmax(x, dim=1) # x has shape (batch_size, num_classes, num_points)
+        x = torch.nn.functional.log_softmax(x, dim=1) # x has shape (batch_size, num_classes, num_points)
 
         x = x.transpose(2, 1) # (batch_size, num_points, num_classes)
 
