@@ -39,8 +39,8 @@ if __name__ == '__main__':
     # create the data loaders
     print("Creating the data loaders...", end=" ")
     train_loader = DataLoader(train_set, batch_size=int(args.batch_size), shuffle=True, pin_memory=True, num_workers=4)
-    val_loader = DataLoader(val_set, batch_size=int(args.batch_size), shuffle=False)
-    test_loader = DataLoader(test_set, batch_size=int(args.batch_size), shuffle=False)
+    val_loader = DataLoader(val_set, batch_size=int(args.batch_size), shuffle=False, pin_memory=True, num_workers=4)
+    test_loader = DataLoader(test_set, batch_size=int(args.batch_size), shuffle=False, pin_memory=True, num_workers=4)
     print("done.")
 
     # get the device 
