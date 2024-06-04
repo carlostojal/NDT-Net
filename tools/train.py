@@ -117,7 +117,7 @@ if __name__ == '__main__':
         print()
 
         # log the loss to wandb
-        wandb.log({"train_loss": loss_per_sample})
+        wandb.log({"train_loss": loss_per_sample, "epoch": epoch+1})
 
         # validation
         # set the model to evaluation mode
@@ -147,7 +147,7 @@ if __name__ == '__main__':
             print()
         
         # log the loss to wandb
-        wandb.log({"val_loss": loss_per_sample.item()})
+        wandb.log({"val_loss": loss_per_sample.item(), "epoch": epoch+1})
 
         # save every "save_every" epochs
         if (epoch+1) % int(args.save_every) == 0:
