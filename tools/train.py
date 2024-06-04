@@ -81,6 +81,8 @@ if __name__ == '__main__':
         model.train()
         curr_sample = 0
         loss_per_sample = 0
+        acc = 0.0
+        acc_mean = 0.0
         for i, (pcl, covs, gt) in enumerate(train_loader):
             # move the data to the device
             pcl = pcl.to(device)
@@ -111,13 +113,19 @@ if __name__ == '__main__':
             # get the loss per sample
             loss_per_sample = (loss / int(args.batch_size)).item()
 
+            # get the accuracy (one-hot encoding)
+            pred_classes = torch.argmax(pred, dim=1)
+            gt_classes = torch.argmax(gt, dim=1)
+            acc = torch.sum(pred_classes == gt_classes).item() / float(int(args.batch_size) * int(args.n_desired_nds))
+            acc_mean += acc / (curr_sample / int(args.batch_size))
+
             # log the loss
-            print(f"\rTrain Loss ({curr_sample}/{len(train_loader)*int(args.batch_size)}): {loss_per_sample}", end="")
+            print(f"\rTrain Sample ({curr_sample}/{len(train_loader)*int(args.batch_size)}): train_loss: {loss_per_sample}, train_acc: {acc}, train_acc_mean: {acc_mean}", end="")
 
         print()
 
         # log the loss to wandb
-        wandb.log({"train_loss": loss_per_sample, "epoch": epoch+1})
+        wandb.log({"train_loss": loss_per_sample, "train_acc": acc, "train_acc_mean": acc_mean, "epoch": epoch+1})
 
         # validation
         # set the model to evaluation mode
@@ -125,12 +133,17 @@ if __name__ == '__main__':
 
         # disable gradient computation
         with torch.no_grad():
+            curr_sample = 0
+            acc = 0.0
+            acc_mean = 0.0
             for i, (pcl, covs, gt) in enumerate(val_loader):
 
                 # move the data to the device
                 pcl = pcl.to(device)
                 covs = covs.to(device)
                 gt = gt.to(device)
+
+                curr_sample += int(args.batch_size)
 
                 # forward pass
                 pred = model(pcl, covs)
@@ -141,13 +154,19 @@ if __name__ == '__main__':
                 # get the loss per sample
                 loss_per_sample = loss / int(args.batch_size)
 
+                # get the accuracy (one-hot encoding)
+                pred_classes = torch.argmax(pred, dim=1)
+                gt_classes = torch.argmax(gt, dim=1)
+                acc = torch.sum(pred_classes == gt_classes).item() / float(int(args.batch_size) * int(args.n_desired_nds))
+                acc_mean += acc / (curr_sample / int(args.batch_size))
+
                 # log the loss
-                print(f"\rValidation Loss: {loss_per_sample.item()}", end="")
+                print(f"\rValidation Sample {curr_sample}/{len(val_loader)*int(args.batch_size)}: val_loss: {loss_per_sample.item()}, val_acc: {acc}, val_acc_mean: {acc_mean}", end="")
 
             print()
         
         # log the loss to wandb
-        wandb.log({"val_loss": loss_per_sample.item(), "epoch": epoch+1})
+        wandb.log({"val_loss": loss_per_sample.item(), "val_acc": acc, "val_acc_mean": acc_mean, "epoch": epoch+1})
 
         # save every "save_every" epochs
         if (epoch+1) % int(args.save_every) == 0:
@@ -162,11 +181,16 @@ if __name__ == '__main__':
     # disable gradient computation
     print("--- TEST ---")
     with torch.no_grad():
+        curr_sample = 0
+        acc = 0.0
+        mean_acc = 0.0
         for i, (pcl, covs, gt) in enumerate(test_loader):
             # move the data to the device
             pcl = pcl.to(device)
             covs = covs.to(device)
             gt = gt.to(device)
+
+            curr_sample += int(args.batch_size)
 
             # forward pass
             pred = model(pcl, covs)
@@ -177,13 +201,19 @@ if __name__ == '__main__':
             # get the loss per sample
             loss_per_sample = loss / int(args.batch_size)
 
+            # get the accuracy (one-hot encoding)
+            pred_classes = torch.argmax(pred, dim=1)
+            gt_classes = torch.argmax(gt, dim=1)
+            acc = torch.sum(pred_classes == gt_classes).item() / float(int(args.batch_size) * int(args.n_desired_nds))
+            mean_acc += acc / (curr_sample / int(args.batch_size))
+
             # log the loss
-            print(f"\rTest Loss: {loss_per_sample.item()}", end="")
+            print(f"\rTest Sample {curr_sample}/{len(test_loader)*int(args.batch_size)}: test_loss: {loss_per_sample.item()}, test_acc: {acc}", end="")
 
     print()
 
     # log the loss to wandb
-    wandb.log({"test_loss": loss_per_sample.item()})
+    wandb.log({"test_loss": loss_per_sample.item(), "test_acc": mean_acc})
 
     # finish the wandb run
     wandb.finish()
