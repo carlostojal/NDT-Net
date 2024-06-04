@@ -89,6 +89,10 @@ if __name__ == '__main__':
             covs = covs.to(device)
             gt = gt.to(device)
 
+            # skip batch if it has only one sample
+            if pcl.shape[0] == 1:
+                continue
+
             # adjust learning rate
             if epoch+1 % 20 == 0:
                 LEARNING_RATE *= 0.5

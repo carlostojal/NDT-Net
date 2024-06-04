@@ -61,6 +61,10 @@ def objective(trial: optuna.trial.Trial) -> float:
             covs = covs.to(device)
             gt = gt.to(device)
 
+            # skip batch if it has only one sample
+            if pcl.shape[0] == 1:
+                continue
+
             curr_sample += bs
 
             # forward pass
