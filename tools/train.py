@@ -82,7 +82,7 @@ if __name__ == '__main__':
         curr_sample = 0
         loss_per_sample = 0
         acc = 0.0
-        acc_mean = 0.0
+        total_acc = 0.0
         for i, (pcl, covs, gt) in enumerate(train_loader):
             # move the data to the device
             pcl = pcl.to(device)
@@ -121,12 +121,14 @@ if __name__ == '__main__':
             pred_classes = torch.argmax(pred, dim=1)
             gt_classes = torch.argmax(gt, dim=1)
             acc = torch.sum(pred_classes == gt_classes).item() / float(int(args.batch_size) * int(args.n_desired_nds))
-            acc_mean += acc / (curr_sample / int(args.batch_size))
+            total_acc += acc
 
             # log the loss
             print(f"\rTrain Sample ({curr_sample}/{len(train_loader)*int(args.batch_size)}): train_loss: {loss_per_sample}, train_acc: {acc}, train_acc_mean: {acc_mean}", end="")
 
         print()
+
+        acc_mean = acc / len(train_loader)
 
         # log the loss to wandb
         wandb.log({"train_loss": loss_per_sample, "train_acc": acc, "train_acc_mean": acc_mean, "epoch": epoch+1})
@@ -139,7 +141,7 @@ if __name__ == '__main__':
         with torch.no_grad():
             curr_sample = 0
             acc = 0.0
-            acc_mean = 0.0
+            total_acc = 0.0
             for i, (pcl, covs, gt) in enumerate(val_loader):
 
                 # move the data to the device
@@ -162,12 +164,14 @@ if __name__ == '__main__':
                 pred_classes = torch.argmax(pred, dim=1)
                 gt_classes = torch.argmax(gt, dim=1)
                 acc = torch.sum(pred_classes == gt_classes).item() / float(int(args.batch_size) * int(args.n_desired_nds))
-                acc_mean += acc / (curr_sample / int(args.batch_size))
+                total_acc += acc
 
                 # log the loss
                 print(f"\rValidation Sample {curr_sample}/{len(val_loader)*int(args.batch_size)}: val_loss: {loss_per_sample.item()}, val_acc: {acc}, val_acc_mean: {acc_mean}", end="")
 
             print()
+
+        acc_mean = acc / len(val_loader)
         
         # log the loss to wandb
         wandb.log({"val_loss": loss_per_sample.item(), "val_acc": acc, "val_acc_mean": acc_mean, "epoch": epoch+1})
@@ -187,7 +191,7 @@ if __name__ == '__main__':
     with torch.no_grad():
         curr_sample = 0
         acc = 0.0
-        mean_acc = 0.0
+        total_acc = 0.0
         for i, (pcl, covs, gt) in enumerate(test_loader):
             # move the data to the device
             pcl = pcl.to(device)
@@ -209,12 +213,14 @@ if __name__ == '__main__':
             pred_classes = torch.argmax(pred, dim=1)
             gt_classes = torch.argmax(gt, dim=1)
             acc = torch.sum(pred_classes == gt_classes).item() / float(int(args.batch_size) * int(args.n_desired_nds))
-            mean_acc += acc / (curr_sample / int(args.batch_size))
+            total_acc += acc
 
             # log the loss
             print(f"\rTest Sample {curr_sample}/{len(test_loader)*int(args.batch_size)}: test_loss: {loss_per_sample.item()}, test_acc: {acc}", end="")
 
     print()
+
+    mean_acc = acc / len(test_loader)
 
     # log the loss to wandb
     wandb.log({"test_loss": loss_per_sample.item(), "test_acc": mean_acc})
