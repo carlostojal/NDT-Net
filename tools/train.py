@@ -124,7 +124,7 @@ if __name__ == '__main__':
 
         print()
 
-        mean_acc = acc / len(train_loader)
+        mean_acc = total_acc / len(train_loader)
 
         # log the loss to wandb
         wandb.log({"train_loss": loss.item(), "train_acc": acc, "train_acc_mean": mean_acc, "epoch": epoch+1})
