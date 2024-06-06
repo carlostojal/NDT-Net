@@ -124,10 +124,10 @@ if __name__ == '__main__':
 
         print()
 
-        acc_mean = acc / len(train_loader)
+        mean_acc = acc / len(train_loader)
 
         # log the loss to wandb
-        wandb.log({"train_loss": loss.item(), "train_acc": acc, "train_acc_mean": acc_mean, "epoch": epoch+1})
+        wandb.log({"train_loss": loss.item(), "train_acc": acc, "train_acc_mean": mean_acc, "epoch": epoch+1})
 
         # validation
         # set the model to evaluation mode
@@ -164,10 +164,10 @@ if __name__ == '__main__':
 
             print()
 
-        acc_mean = acc / len(val_loader)
+        mean_acc = total_acc / len(val_loader)
         
         # log the loss to wandb
-        wandb.log({"val_loss": loss.item(), "val_acc": acc, "val_acc_mean": acc_mean, "epoch": epoch+1})
+        wandb.log({"val_loss": loss.item(), "val_acc": acc, "val_acc_mean": mean_acc, "epoch": epoch+1})
 
         # save every "save_every" epochs
         if (epoch+1) % int(args.save_every) == 0:
@@ -210,7 +210,7 @@ if __name__ == '__main__':
 
     print()
 
-    mean_acc = acc / len(test_loader)
+    mean_acc = total_acc / len(test_loader)
 
     # log the loss to wandb
     wandb.log({"test_loss": loss.item(), "test_acc": acc, "test_acc_mean": mean_acc})
