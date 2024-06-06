@@ -102,7 +102,7 @@ if __name__ == '__main__':
             curr_sample += int(args.batch_size)
 
             # forward pass
-            pred = model(pcl, covs)
+            pred = model(pcl, covs) # [B, N, C]
 
             # compute the loss - cross entropy
             loss = torch.nn.functional.cross_entropy(pred, gt)
@@ -115,8 +115,8 @@ if __name__ == '__main__':
             optimizer.step()
 
             # get the accuracy (one-hot encoding)
-            pred_classes = torch.argmax(pred, dim=1)
-            gt_classes = torch.argmax(gt, dim=1)
+            pred_classes = torch.argmax(pred, dim=2)
+            gt_classes = torch.argmax(gt, dim=2)
             acc = torch.sum(pred_classes == gt_classes).item() / float(int(args.batch_size) * int(args.n_desired_nds))
             total_acc += acc
 
@@ -155,8 +155,8 @@ if __name__ == '__main__':
                 loss = torch.nn.functional.cross_entropy(pred, gt)
 
                 # get the accuracy (one-hot encoding)
-                pred_classes = torch.argmax(pred, dim=1)
-                gt_classes = torch.argmax(gt, dim=1)
+                pred_classes = torch.argmax(pred, dim=2)
+                gt_classes = torch.argmax(gt, dim=2)
                 acc = torch.sum(pred_classes == gt_classes).item() / float(int(args.batch_size) * int(args.n_desired_nds))
                 total_acc += acc
 
@@ -201,8 +201,8 @@ if __name__ == '__main__':
             loss = torch.nn.functional.cross_entropy(pred, gt)
 
             # get the accuracy (one-hot encoding)
-            pred_classes = torch.argmax(pred, dim=1)
-            gt_classes = torch.argmax(gt, dim=1)
+            pred_classes = torch.argmax(pred, dim=2)
+            gt_classes = torch.argmax(gt, dim=2)
             acc = torch.sum(pred_classes == gt_classes).item() / float(int(args.batch_size) * int(args.n_desired_nds))
             total_acc += acc
 
