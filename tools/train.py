@@ -114,9 +114,6 @@ if __name__ == '__main__':
             # update the weights
             optimizer.step()
 
-            # get the loss per sample
-            loss_per_sample = (loss / int(args.batch_size)).item()
-
             # get the accuracy (one-hot encoding)
             pred_classes = torch.argmax(pred, dim=1)
             gt_classes = torch.argmax(gt, dim=1)
@@ -124,7 +121,7 @@ if __name__ == '__main__':
             total_acc += acc
 
             # log the loss
-            print(f"\rTrain Sample ({curr_sample}/{len(train_loader)*int(args.batch_size)}): train_loss: {loss_per_sample}, train_acc: {acc}, train_acc_mean: {acc_mean}", end="")
+            print(f"\rTrain Sample ({curr_sample}/{len(train_loader)*int(args.batch_size)}): train_loss: {loss.item()}, train_acc: {acc}, train_acc_mean: {acc_mean}", end="")
 
         print()
 
@@ -157,9 +154,6 @@ if __name__ == '__main__':
                 # compute the loss - cross entropy
                 loss = torch.nn.functional.cross_entropy(pred, gt)
 
-                # get the loss per sample
-                loss_per_sample = loss / int(args.batch_size)
-
                 # get the accuracy (one-hot encoding)
                 pred_classes = torch.argmax(pred, dim=1)
                 gt_classes = torch.argmax(gt, dim=1)
@@ -167,7 +161,7 @@ if __name__ == '__main__':
                 total_acc += acc
 
                 # log the loss
-                print(f"\rValidation Sample {curr_sample}/{len(val_loader)*int(args.batch_size)}: val_loss: {loss_per_sample.item()}, val_acc: {acc}, val_acc_mean: {acc_mean}", end="")
+                print(f"\rValidation Sample {curr_sample}/{len(val_loader)*int(args.batch_size)}: val_loss: {loss.item()}, val_acc: {acc}, val_acc_mean: {acc_mean}", end="")
 
             print()
 
@@ -206,9 +200,6 @@ if __name__ == '__main__':
             # compute the loss - cross entropy
             loss = torch.nn.functional.cross_entropy(pred, gt)
 
-            # get the loss per sample
-            loss_per_sample = loss / int(args.batch_size)
-
             # get the accuracy (one-hot encoding)
             pred_classes = torch.argmax(pred, dim=1)
             gt_classes = torch.argmax(gt, dim=1)
@@ -216,7 +207,7 @@ if __name__ == '__main__':
             total_acc += acc
 
             # log the loss
-            print(f"\rTest Sample {curr_sample}/{len(test_loader)*int(args.batch_size)}: test_loss: {loss_per_sample.item()}, test_acc: {acc}", end="")
+            print(f"\rTest Sample {curr_sample}/{len(test_loader)*int(args.batch_size)}: test_loss: {loss.item()}, test_acc: {acc}", end="")
 
     print()
 
