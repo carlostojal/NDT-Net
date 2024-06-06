@@ -54,7 +54,6 @@ def objective(trial: optuna.trial.Trial) -> float:
         print(f"Opt: {optimizers[opt]}, BS: {bs}, LR: {lr}")
         
         curr_sample = 0
-        loss_per_sample = 0
         for i, (pcl, covs, gt) in enumerate(train_loader):
             # move the data to the device
             pcl = pcl.to(device)
@@ -80,12 +79,9 @@ def objective(trial: optuna.trial.Trial) -> float:
             # update the weights
             optim.step()
 
-            # get the loss per sample
-            loss_per_sample = loss / bs
+            print(f"\rLoss {curr_sample}/{len(train_loader)*bs}: {loss.item()}", end="")
 
-            print(f"\rLoss {curr_sample}/{len(train_loader)*bs}: {loss_per_sample}", end="")
-
-        return loss_per_sample
+        return loss
 
 if __name__ == '__main__':
 
