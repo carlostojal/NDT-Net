@@ -121,7 +121,7 @@ if __name__ == '__main__':
             total_acc += acc
 
             # log the loss
-            print(f"\rTrain Sample ({curr_sample}/{len(train_loader)*int(args.batch_size)}): train_loss: {loss.item()}, train_acc: {acc}, train_acc_mean: {acc_mean}", end="")
+            print(f"\rTrain Sample ({curr_sample}/{len(train_loader)*int(args.batch_size)}): train_loss: {loss.item()}, train_acc: {acc}", end="")
 
         print()
 
@@ -161,7 +161,7 @@ if __name__ == '__main__':
                 total_acc += acc
 
                 # log the loss
-                print(f"\rValidation Sample {curr_sample}/{len(val_loader)*int(args.batch_size)}: val_loss: {loss.item()}, val_acc: {acc}, val_acc_mean: {acc_mean}", end="")
+                print(f"\rValidation Sample {curr_sample}/{len(val_loader)*int(args.batch_size)}: val_loss: {loss.item()}, val_acc: {acc}", end="")
 
             print()
 
@@ -214,7 +214,7 @@ if __name__ == '__main__':
     mean_acc = acc / len(test_loader)
 
     # log the loss to wandb
-    wandb.log({"test_loss": loss_per_sample.item(), "test_acc": mean_acc})
+    wandb.log({"test_loss": loss_per_sample.item(), "test_acc": acc, "test_acc_mean": mean_acc})
 
     # finish the wandb run
     wandb.finish()
