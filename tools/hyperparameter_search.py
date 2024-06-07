@@ -6,7 +6,7 @@ import sys
 from argparse import ArgumentParser
 sys.path.append(".")
 from ndtnetpp.datasets.CARLA_NDT_Seg import CARLA_NDT_Seg
-from ndtnetpp.models.pointnet import PointNetSegmentation
+from ndtnetpp.models.ndtnet import NDTNetSegmentation
 
 # parse the command-line arguments
 parser = ArgumentParser()
@@ -38,7 +38,7 @@ def objective(trial: optuna.trial.Trial) -> float:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # create the model
-    model = PointNetSegmentation(3, NUM_CLASSES)    
+    model = NDTNetSegmentation(3, NUM_CLASSES)    
     model = model.to(device)
 
     # create the optimizer

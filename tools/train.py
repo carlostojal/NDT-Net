@@ -2,10 +2,12 @@ import torch
 from torch.utils.data import DataLoader
 import wandb
 import sys
+import os
+import datetime
 from argparse import ArgumentParser
 sys.path.append(".")
 from ndtnetpp.datasets.CARLA_NDT_Seg import CARLA_NDT_Seg
-from ndtnetpp.models.pointnet import PointNetClassification, PointNetSegmentation
+from ndtnetpp.models.ndtnet import NDTNetClassification, NDTNetSegmentation
 
 if __name__ == '__main__':
 
@@ -24,6 +26,8 @@ if __name__ == '__main__':
     parser.add_argument("--n_classes", type=int, help="Number of classes. Don't count with unknown/no class", default=28, required=False)
     args = parser.parse_args()
 
+    path = os.path.join(args.out_path, f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}")
+
     # create the dataset
     print("Creating the dataset...", end=" ")
     if args.task == "classification":
@@ -39,8 +43,8 @@ if __name__ == '__main__':
     # create the data loaders
     print("Creating the data loaders...", end=" ")
     train_loader = DataLoader(train_set, batch_size=int(args.batch_size), shuffle=True, pin_memory=True, num_workers=4)
-    val_loader = DataLoader(val_set, batch_size=int(args.batch_size), shuffle=False, pin_memory=True, num_workers=4)
-    test_loader = DataLoader(test_set, batch_size=int(args.batch_size), shuffle=False, pin_memory=True, num_workers=4)
+    val_loader = DataLoader(val_set, batch_size=int(args.batch_size), shuffle=True, pin_memory=True, num_workers=4)
+    test_loader = DataLoader(test_set, batch_size=int(args.batch_size), shuffle=True, pin_memory=True, num_workers=4)
     print("done.")
 
     # get the device 
@@ -49,9 +53,9 @@ if __name__ == '__main__':
     # create the model
     print("Creating the model...", end=" ")
     if args.task == "classification":
-        model = PointNetClassification(3, 4096, 512)
+        model = NDTNetClassification(3, 4096, 512)
     elif args.task == "segmentation":
-        model = PointNetSegmentation(3, int(args.n_classes))
+        model = NDTNetSegmentation(3, int(args.n_classes))
     model = model.to(device)
     print("done.")
 
@@ -60,7 +64,8 @@ if __name__ == '__main__':
 
     # initialize wandb
     print("Initializing wandb...", end=" ")
-    wandb.init(project="ndtnetpp", 
+    wandb.init(project="ndtnetpp",
+        name=f"{args.task}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}",
         config={
             "task": args.task,
             "epochs": args.epochs,
@@ -171,8 +176,11 @@ if __name__ == '__main__':
 
         # save every "save_every" epochs
         if (epoch+1) % int(args.save_every) == 0:
+            # create the output path if it doesn't exist
+            if not os.path.exists(path):
+                os.makedirs(path)
             print("Saving the model...", end=" ")
-            torch.save(model.state_dict(), f"{args.out_path}/pointnet_{epoch+1}.pth")
+            torch.save(model.state_dict(), f"{path}/ndtnet_{epoch+1}.pth")
             print("done.")
 
     # test

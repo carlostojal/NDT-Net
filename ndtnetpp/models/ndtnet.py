@@ -1,6 +1,5 @@
 import torch
 from torch import nn
-import numpy as np
 
 class TNet(nn.Module):
     """
@@ -60,9 +59,9 @@ class TNet(nn.Module):
         return x
 
 
-class PointNet(nn.Module):
+class NDTNet(nn.Module):
     """
-    PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation
+    NDT-Net
     """
 
     def __init__(self, point_dim: int = 3) -> None:
@@ -85,14 +84,14 @@ class PointNet(nn.Module):
 
     def forward(self, points: torch.Tensor, covariances: torch.Tensor) -> torch.Tensor:
         """
-        Forward pass of the PointNet
+        Forward pass of the NDT-Net
 
         Args:
         - points (torch.Tensor): the points tensor, shaped (batch_size, num_points, point_dim)
         - covariances (torch.Tensor): the covariances tensor, shaped (batch_size, num_points, covariance_dim)
 
         Returns:
-        - torch.Tensor: the output of the PointNet
+        - Tuple[torch.Tensor, torch.Tensor]: tensor with shape (batch_size, 1024, num_points) and the feature transform
         """
         
         # concatenate the covariances to the input tensor, making 12-dimensional points
@@ -137,7 +136,7 @@ class PointNet(nn.Module):
         # return a tensor with shape (batch_size, 1024, num_points) and the feature transform
         return x, x_t2
 
-class PointNetClassification(nn.Module):
+class NDTNetClassification(nn.Module):
 
     def __init__(self, point_dim: int = 3, num_classes: int = 512) -> None:
         super().__init__()
@@ -145,7 +144,7 @@ class PointNetClassification(nn.Module):
         self.point_dim = point_dim
         self.num_classes = num_classes
 
-        self.feature_extractor = PointNet(point_dim)
+        self.feature_extractor = NDTNet(point_dim)
 
         self.conv1 = nn.Conv1d(1024, 512, 1)
         self.conv2 = nn.Conv1d(512, 256, 1)
@@ -168,7 +167,7 @@ class PointNetClassification(nn.Module):
 
         return x
     
-class PointNetSegmentation(nn.Module):
+class NDTNetSegmentation(nn.Module):
 
     def __init__(self, point_dim: int = 3, num_classes: int = 16) -> None:
         super().__init__()
@@ -176,7 +175,7 @@ class PointNetSegmentation(nn.Module):
         self.point_dim = point_dim
         self.num_classes = num_classes
 
-        self.feature_extractor = PointNet(point_dim)
+        self.feature_extractor = NDTNet(point_dim)
 
         self.conv1 = nn.Conv1d(1088, 512, 1) # 1088 = 1024 + 64
         self.conv2 = nn.Conv1d(512, 256, 1)
@@ -211,44 +210,5 @@ class PointNetSegmentation(nn.Module):
         x = torch.nn.functional.log_softmax(x, dim=1) # x has shape (batch_size, num_classes, num_points)
 
         x = x.transpose(2, 1) # (batch_size, num_points, num_classes)
-
-        return x
-
-
-class PointNetEmbedding(nn.Module):
-
-    def __init__(self, point_dim: int = 3, sequence_len: int = 1024, embedding_dim: int = 762) -> None:
-        super().__init__()
-
-        self.point_dim = point_dim
-        self.sequence_len = sequence_len
-        self.embedding_dim = embedding_dim
-
-        self.feature_extractor = PointNet(point_dim)
-
-        self.conv1 = nn.Conv1d(1024, 512, 1)
-        self.conv2 = nn.Conv1d(512, 256, 1)
-        self.conv3 = nn.Conv1d(256, 128, 1)
-        self.conv4 = nn.Conv1d(256, embedding_dim * sequence_len, 1)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # extract features
-        x, x_t2 = self.feature_extractor(x)
-
-        # max pooling
-        x = torch.max(x, 2, keepdim=True)[0]
-
-        # concatenate feature transform
-        x = x.expand(-1, -1, x_t2.shape[2])
-        x = torch.cat((x_t2, x), dim=1)
-
-        # FC layers
-        x = torch.relu(self.conv1(x))
-        x = torch.relu(self.conv2(x))
-        x = torch.relu(self.conv3(x))
-        x = self.conv4(x)
-
-        # reshape to (batch_size, sequence_len, embedding_dim)
-        x = x.view(-1, self.sequence_len, self.embedding_dim)
 
         return x
