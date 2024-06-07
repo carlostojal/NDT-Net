@@ -1,2 +1,0 @@
-
-# NDT-Net++ Training Script

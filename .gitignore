@@ -3,3 +3,8 @@ build/
 # ignore all pycache
 **/__pycache__/
 .vscode/
+.idea
+
+wandb/
+
+out

@@ -24,9 +24,9 @@ The rest of the PointNet and PointNet++ architecture is as defined by the origin
 
 ## Future Work
 ### NDT Core
-- [ ] Parallelize the most onerous loops.
-- [ ] Separate the code in multiple files.
-- [ ] Write unit tests.
+- [X] Parallelize the most onerous loops.
+- [X] Separate the code in multiple files.
+- [X] Write unit tests.
 ### PyTorch
-- [ ] Implement PointNet and PointNet++.
-- [ ] Integrate NDT into PointNet and PointNet++.
+- [X] Implement PointNet and PointNet++.
+- [X] Integrate NDT into PointNet and PointNet++.
