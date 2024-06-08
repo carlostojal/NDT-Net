@@ -28,14 +28,16 @@ if __name__ == '__main__':
 
     path = os.path.join(args.out_path, f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}")
 
+    desired_nds = [int(args.n_desired_nds)]
+
     # create the dataset
     print("Creating the dataset...", end=" ")
-    if args.task == "classification":
+    if "classification" in args.task:
         raise NotImplementedError("Classification task not implemented yet.")
-    elif args.task == "segmentation":
-        train_set = CARLA_NDT_Seg(int(args.n_classes), int(args.n_desired_nds), args.train_path)
-        val_set = CARLA_NDT_Seg(int(args.n_classes), int(args.n_desired_nds), args.val_path)
-        test_set = CARLA_NDT_Seg(int(args.n_classes), int(args.n_desired_nds), args.test_path)
+    elif "segmentation" in args.task:
+        train_set = CARLA_NDT_Seg(int(args.n_classes), desired_nds, args.train_path)
+        val_set = CARLA_NDT_Seg(int(args.n_classes), desired_nds, args.val_path)
+        test_set = CARLA_NDT_Seg(int(args.n_classes), desired_nds, args.test_path)
     else:
         raise ValueError(f"Unknown task: {args.task}")
     print("done.")
@@ -89,7 +91,7 @@ if __name__ == '__main__':
         total_acc = 0.0
         for i, (pcl, covs, gt) in enumerate(train_loader):
             # move the data to the device
-            pcl = pcl.to(device)
+            pcl = pcl.to(device) # [B, R, N, 3], where R is the number of resolutions
             covs = covs.to(device)
             gt = gt.to(device)
 
@@ -106,7 +108,11 @@ if __name__ == '__main__':
             curr_sample += int(args.batch_size)
 
             # forward pass
-            pred = model(pcl, covs) # [B, N, C]
+            # remove the "1" dimension
+            pcl = pcl.squeeze(1)
+            covs = covs.squeeze(1)
+            gt = gt.squeeze(1)
+            pred = model(pcl, covs)
 
             # compute the loss - cross entropy
             loss = torch.nn.functional.cross_entropy(pred, gt)
