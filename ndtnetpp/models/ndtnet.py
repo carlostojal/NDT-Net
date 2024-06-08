@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from enum import Enum
 
 class TNet(nn.Module):
     """
@@ -64,38 +65,62 @@ class NDTNet(nn.Module):
     NDT-Net
     """
 
-    def __init__(self, point_dim: int = 3) -> None:
+    class AdditionalFeatures(Enum):
+        NONE = "none"
+        COVARIANCES = "covariances"
+        FEATURE_VECTOR = "feature_vector"
+
+    def __init__(self, 
+                 point_dim: int = 3, 
+                 feature_dim: int = 1024, 
+                 extra_type: AdditionalFeatures = AdditionalFeatures.COVARIANCES) -> None:
+        """
+        Constructor of the NDT-Net
+
+        Args:
+        - point_dim (int): the dimension of the input points. Default is 3.
+        - feature_dim (int): the dimension of the output features. Default is 1024.
+        - extra_type (str): the type of the additional features. Can be "none", "covariances" or "feature_vector". Default is "covariances".
+        """
         super().__init__()
 
         self.point_dim = point_dim
-        self.covariance_dim = point_dim**2
+        self.feature_dim = feature_dim
 
-        self.conv1 = nn.Conv1d(self.point_dim+self.covariance_dim, 64, 1)
+        self.extra_dim = 0
+        if extra_type == NDTNet.AdditionalFeatures.COVARIANCES:
+            self.extra_dim = self.point_dim**2
+        elif extra_type == NDTNet.AdditionalFeatures.FEATURE_VECTOR:
+            self.extra_dim = self.feature_dim + self.point_dim**2
+        elif extra_type == NDTNet.AdditionalFeatures.NONE:
+            self.extra_dim = 0
+
+        self.conv1 = nn.Conv1d(self.point_dim+self.extra_dim, 64, 1)
         self.conv2 = nn.Conv1d(64, 128, 1)
-        self.conv3 = nn.Conv1d(128, 1024, 1)
+        self.conv3 = nn.Conv1d(128, self.feature_dim, 1)
 
         self.bn1 = nn.BatchNorm1d(64)
         self.bn2 = nn.BatchNorm1d(128)
-        self.bn3 = nn.BatchNorm1d(1024)
+        self.bn3 = nn.BatchNorm1d(self.feature_dim)
 
         self.t1 = TNet(in_dim=point_dim)
         self.t2 = TNet(in_dim=64)
 
 
-    def forward(self, points: torch.Tensor, covariances: torch.Tensor) -> torch.Tensor:
+    def forward(self, points: torch.Tensor, extra: torch.Tensor) -> torch.Tensor:
         """
         Forward pass of the NDT-Net
 
         Args:
         - points (torch.Tensor): the points tensor, shaped (batch_size, num_points, point_dim)
-        - covariances (torch.Tensor): the covariances tensor, shaped (batch_size, num_points, covariance_dim)
+        - extra (torch.Tensor): the additional features tensor. can be either flattened covariances or a feature vector
 
         Returns:
         - Tuple[torch.Tensor, torch.Tensor]: tensor with shape (batch_size, 1024, num_points) and the feature transform
         """
         
         # concatenate the covariances to the input tensor, making 12-dimensional points
-        x = torch.cat((points, covariances), dim=2)
+        x = torch.cat((points, extra), dim=2)
 
         B, N, D = x.size()
 
@@ -169,15 +194,16 @@ class NDTNetClassification(nn.Module):
     
 class NDTNetSegmentation(nn.Module):
 
-    def __init__(self, point_dim: int = 3, num_classes: int = 16) -> None:
+    def __init__(self, point_dim: int = 3, num_classes: int = 16, feature_dim: int = 1024) -> None:
         super().__init__()
 
         self.point_dim = point_dim
         self.num_classes = num_classes
+        self.feature_dim = feature_dim
 
         self.feature_extractor = NDTNet(point_dim)
 
-        self.conv1 = nn.Conv1d(1088, 512, 1) # 1088 = 1024 + 64
+        self.conv1 = nn.Conv1d(self.feature_dim + 64, 512, 1) # 1088 = 1024 + 64
         self.conv2 = nn.Conv1d(512, 256, 1)
         self.conv3 = nn.Conv1d(256, 128, 1)
         self.conv4 = nn.Conv1d(128, num_classes+1, 1)
