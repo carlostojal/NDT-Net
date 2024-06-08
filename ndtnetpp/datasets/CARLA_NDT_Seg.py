@@ -14,11 +14,11 @@ class CARLA_NDT_Seg(Dataset):
         n_desired_nds (int): number of desired normal distributions
         path (str): path to the dataset
     """
-    def __init__(self, n_classes: int, n_desired_nds: int, path: str) -> None:
+    def __init__(self, n_classes: int, n_desired_nds: List[int], path: str) -> None:
         super().__init__()
 
         self.n_classes: int = n_classes
-        self.n_desired_nds: int = n_desired_nds
+        self.n_desired_nds: List[int] = n_desired_nds
         self.path: str = path
 
         # verify that the path exists
@@ -49,9 +49,12 @@ class CARLA_NDT_Seg(Dataset):
         pcl_filename: str = os.path.join(self.path, self.filenames[idx])
 
         # get the point cloud and the segmentation ground truth
-        pcl, cov, gt = self.get_data_pcl(pcl_filename)
-
-        return pcl, cov, gt
+        if len(self.n_desired_nds) == 1:
+            pcl, cov, gt = self.get_data_pcl(pcl_filename)
+            return pcl, cov, gt
+        else:
+            pcl1, cov1, gt1, pcl2, cov2, gt2 = self.get_data_pcl(pcl_filename)
+            return pcl1, cov1, gt1, pcl2, cov2, gt2
         
     def get_data_pcl(self, pcl_filename: str, num_header_lines: int = 10) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
@@ -98,27 +101,42 @@ class CARLA_NDT_Seg(Dataset):
         np_points = np.asarray(points)
         np_classes = np.asarray(classes, dtype=np.uint16)
 
-        # sample using NDT
-        sampler: NDT_Sampler = NDT_Sampler(np_points, np_classes, self.n_classes)
-        np_points1, np_covariances1, np_classes1 = sampler.downsample(self.n_desired_nds)
-        sampler.cleanup()
+        pointclouds_list = []
+        covariances_list = []
+        ground_truth_list = []
+        sampler_list = []
 
-        points = torch.tensor(np_points1).float()
-        covariances = torch.tensor(np_covariances1).float()
-        classes = torch.tensor(np_classes1).float()
+        # iterate the desired number of normal distributions
+        for num_nds in self.n_desired_nds:
 
-        # replace NaN values with zeros
-        points[torch.isnan(points)] = 0
-        covariances[torch.isnan(covariances)] = 0
+            # sample using NDT
+            sampler: NDT_Sampler = NDT_Sampler(np_points, np_classes, self.n_classes)
+            np_points1, np_covariances1, np_classes1 = sampler.downsample(num_nds)
+            sampler.cleanup()
 
-        # make the ground truth tensor with one-hot encoding
-        gt = torch.zeros((classes.shape[0], self.n_classes+1)).float()
-        for i in range(classes.shape[0]):
-            gt[i, int(classes[i])] = 1
+            points = torch.tensor(np_points1).float()
+            covariances = torch.tensor(np_covariances1).float()
+            classes = torch.tensor(np_classes1).float()
 
-        # points: [n_points, 3]
-        # covariances: [n_points, 9]
-        # gt: [n_points, n_classes+1]
+            # replace NaN values with zeros
+            points[torch.isnan(points)] = 0
+            covariances[torch.isnan(covariances)] = 0
 
-        # return the tensors
-        return points, covariances, gt
+            # make the ground truth tensor with one-hot encoding
+            gt = torch.zeros((classes.shape[0], self.n_classes+1)).float()
+            for i in range(classes.shape[0]):
+                gt[i, int(classes[i])] = 1
+
+            # points: [n_points, 3]
+            # covariances: [n_points, 9]
+            # gt: [n_points, n_classes+1]
+
+            pointclouds_list.append(points)
+            covariances_list.append(covariances)
+            ground_truth_list.append(gt)
+            sampler_list.append([sampler])
+
+        if len(pointclouds_list) == 1:
+            return pointclouds_list[0], covariances_list[0], ground_truth_list[0]
+        else:
+            return pointclouds_list[0], covariances_list[0], ground_truth_list[0], pointclouds_list[1], covariances_list[1], ground_truth_list[1]
