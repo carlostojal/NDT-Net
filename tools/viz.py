@@ -111,7 +111,7 @@ if __name__ == "__main__":
     downsampled_pcd_obj.points = o3d.utility.Vector3dVector(downsampled_pcd)
     downsampled_pcd_obj.paint_uniform_color([0, 1, 0])
 
-    # downsampled_pcd_obj = paint_class(np.array(downsampled_pcd.points), classes, int(args.classes))
+    downsampled_pcd_obj = paint_class(np.array(downsampled_pcd_obj.points), classes, int(args.classes))
 
     # visualize downsampled point cloud
     vis.add_geometry(downsampled_pcd_obj)
