@@ -160,6 +160,40 @@ class NDTNet(nn.Module):
 
         # return a tensor with shape (batch_size, 1024, num_points) and the feature transform
         return x, x_t2
+    
+class NDTNetEmbedding(NDTNet):
+    def __init__(self,
+                 num_points: int = 4080,
+                 point_dim: int = 3, 
+                 feature_dim: int = 1024,
+                 sequence_len: int = 4080, 
+                 embedding_dim: int = 1024,
+                 extra_type: NDTNet.AdditionalFeatures = NDTNet.AdditionalFeatures.COVARIANCES) -> None:
+        super().__init__(point_dim, feature_dim, extra_type)
+
+        self.num_points = num_points
+        self.sequence_len = sequence_len
+        self.embedding_dim = embedding_dim
+
+        # create the embedding layer
+        # in is the feature dimension (num_points * feature_dim)
+        # out is the embedding dimension (sequence_len * embedding_dim)
+        self.embedding = nn.Linear(self.num_points * self.feature_dim, self.sequence_len * self.embedding_dim)
+
+    def forward(self, points: torch.Tensor, extra: torch.Tensor) -> torch.Tensor:
+
+        x, x_t2 = super().forward(points, extra)
+
+        # flatten the features
+        x = x.view(-1, self.num_points * self.feature_dim)
+
+        # embed the features
+        x = self.embedding(x)
+
+        # reshape the features
+        x = x.view(-1, self.sequence_len, self.embedding_dim)
+
+        return x
 
 class NDTNetClassification(nn.Module):
 
