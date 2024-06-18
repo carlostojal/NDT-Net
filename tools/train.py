@@ -15,6 +15,7 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument("--task", type=str, help="Task to perform (classification or segmentation)", default="segmentation", required=False)
     parser.add_argument("--n_desired_nds", type=int, help="Number of desired normal distributions", default=4080, required=False)
+    parser.add_argument("--n_samples", type=int, help="Number of samples to take initially using FPS", default=70000, required=False)
     parser.add_argument("--train_path", type=str, help="Path to the training dataset", required=True)
     parser.add_argument("--val_path", type=str, help="Path to the validation dataset", required=True)
     parser.add_argument("--test_path", type=str, help="Path to the test dataset", required=True)
@@ -35,9 +36,9 @@ if __name__ == '__main__':
     if "classification" in args.task:
         raise NotImplementedError("Classification task not implemented yet.")
     elif "segmentation" in args.task:
-        train_set = CARLA_Seg(int(args.n_classes), desired_nds, args.train_path)
-        val_set = CARLA_Seg(int(args.n_classes), desired_nds, args.val_path)
-        test_set = CARLA_Seg(int(args.n_classes), desired_nds, args.test_path)
+        train_set = CARLA_Seg(int(args.n_classes), int(args.n_samples), args.train_path)
+        val_set = CARLA_Seg(int(args.n_classes), int(args.n_samples), args.val_path)
+        test_set = CARLA_Seg(int(args.n_classes), int(args.n_samples), args.test_path)
     else:
         raise ValueError(f"Unknown task: {args.task}")
     print("done.")
