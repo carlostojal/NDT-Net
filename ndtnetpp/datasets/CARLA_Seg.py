@@ -1,24 +1,25 @@
 import torch
 from torch.utils.data import Dataset
 import numpy as np
+import open3d as o3d
 import os
 from typing import Tuple, List
 from ndtnetpp.preprocessing.ndt_legacy import NDT_Sampler
 
-class CARLA_NDT_Seg(Dataset):
+class CARLA_Seg(Dataset):
     """
-    CARLA NDT semantic segmentation dataset.
+    CARLA semantic segmentation dataset.
 
     Args:
         n_classes (int): number of point classes. Don't count with unlabeled/unknown class.
-        n_desired_nds (int): number of desired normal distributions
+        n_samples (int): number of points to sample (unsing farthest point sampling)
         path (str): path to the dataset
     """
-    def __init__(self, n_classes: int, n_desired_nds: List[int], path: str) -> None:
+    def __init__(self, n_classes: int, n_samples: int, path: str) -> None:
         super().__init__()
 
         self.n_classes: int = n_classes
-        self.n_desired_nds: List[int] = n_desired_nds
+        self.n_samples = n_samples
         self.path: str = path
 
         # verify that the path exists
@@ -56,7 +57,45 @@ class CARLA_NDT_Seg(Dataset):
             pcl1, cov1, gt1, pcl2, cov2, gt2 = self.get_data_pcl(pcl_filename)
             return pcl1, cov1, gt1, pcl2, cov2, gt2
         
-    def get_data_pcl(self, pcl_filename: str, num_header_lines: int = 10) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def color_to_class(self, color: np.array) -> int:
+        """
+        Convert a color to a class tag.
+
+        Args:
+            color (Tuple[int, int, int]): RGB color. Values are in range [0, 1]
+
+        Returns:
+            int: class tag
+        """
+
+        # scale the color values to the range [0, 255]
+        color = (color * 255).astype(np.uint8)
+
+        # convert the RGB color to a single integer
+        color_int = color[0] << 16 | color[1] << 8 | color[2]
+
+        return color_int
+    
+    def class_to_color(self, class_tag: int) -> np.array:
+        """
+        
+        Convert a class tag to a color.
+
+        Args:
+            class_tag (int): class tag
+
+        Returns:
+            Tuple[int, int, int]: RGB color. Values are in range [0, 1]
+        """
+
+        # get the red, green and blue components
+        r = (class_tag >> 16) & 0xff
+        g = (class_tag >> 8) & 0xff
+        b = class_tag & 0xff
+
+        return np.array([r, g, b], dtype=np.float32) / 255.0
+        
+    def get_data_pcl(self, pcl_filename: str, num_header_lines: int = 10) -> Tuple[torch.Tensor, ]:
         """
         Get the data from a given PLY file.
 
@@ -65,7 +104,7 @@ class CARLA_NDT_Seg(Dataset):
             num_header_lines (int): number of header lines in the PLY file (default: 10)
 
         Returns:
-            Tuple[torch.Tensor, torch.Tensor, torch.Tensor]: point cloud, covariances and segmentation ground truth tensors
+            Tuple[torch.Tensor, torch.Tensor]: point cloud and segmentation ground truth tensors
         """
 
         points: List[List[float]] = []  # Points coordinates
@@ -98,45 +137,28 @@ class CARLA_NDT_Seg(Dataset):
 
             n_points += 1
 
+        # create numpy arrays with the points
         np_points = np.asarray(points)
         np_classes = np.asarray(classes, dtype=np.uint16)
 
-        pointclouds_list = []
-        covariances_list = []
-        ground_truth_list = []
-        sampler_list = []
+        # create the Open3D point cloud object
+        pcd = o3d.geometry.PointCloud()
+        pcd.points = o3d.utility.Vector3dVector(np_points)
+        # assign the colors to the point cloud
+        pcd.colors = o3d.utility.Vector3dVector([self.class_to_color(c) for c in np_classes])
+        # downsample using FPS
+        pcd = pcd.farthest_point_down_sample(self.n_samples)
 
-        # iterate the desired number of normal distributions
-        for num_nds in self.n_desired_nds:
+        # create a tensor from the points
+        points = torch.tensor(np.asarray(pcd.points)).float()
 
-            # sample using NDT
-            sampler: NDT_Sampler = NDT_Sampler(np_points, np_classes, self.n_classes)
-            np_points1, np_covariances1, np_classes1 = sampler.downsample(num_nds)
-            sampler.cleanup()
+        # create a list of classes from the colors
+        np_colors = np.asarray(pcd.colors)
+        np_classes = np.array([self.color_to_class(c) for c in np_colors])
+        
+        # make the ground truth tensor with one-hot encoding
+        gt = torch.zeros((points.shape[0], self.n_classes+1)).float()
+        for i in range(points.shape[0]):
+            gt[i, int(np_classes[i])] = 1
 
-            points = torch.tensor(np_points1).float()
-            covariances = torch.tensor(np_covariances1).float()
-            classes = torch.tensor(np_classes1).float()
-
-            # replace NaN values with zeros
-            points[torch.isnan(points)] = 0
-            covariances[torch.isnan(covariances)] = 0
-
-            # make the ground truth tensor with one-hot encoding
-            gt = torch.zeros((classes.shape[0], self.n_classes+1)).float()
-            for i in range(classes.shape[0]):
-                gt[i, int(classes[i])] = 1
-
-            # points: [n_points, 3]
-            # covariances: [n_points, 9]
-            # gt: [n_points, n_classes+1]
-
-            pointclouds_list.append(points)
-            covariances_list.append(covariances)
-            ground_truth_list.append(gt)
-            sampler_list.append([sampler])
-
-        if len(pointclouds_list) == 1:
-            return pointclouds_list[0], covariances_list[0], ground_truth_list[0]
-        else:
-            return pointclouds_list[0], covariances_list[0], ground_truth_list[0], pointclouds_list[1], covariances_list[1], ground_truth_list[1]
+        return points, gt
