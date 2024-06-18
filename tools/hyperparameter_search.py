@@ -5,7 +5,7 @@ from typing import List
 import sys
 from argparse import ArgumentParser
 sys.path.append(".")
-from ndtnetpp.datasets.CARLA_NDT_Seg import CARLA_NDT_Seg
+from ndtnetpp.datasets.CARLA_Seg import CARLA_Seg
 from ndtnetpp.models.ndtnet import NDTNetSegmentation
 
 # parse the command-line arguments
@@ -31,7 +31,7 @@ def objective(trial: optuna.trial.Trial) -> float:
     lr = trial.suggest_float("learning_rate", 1e-5, 1e-1)
 
     # create the dataset a data loader
-    train_set = CARLA_NDT_Seg(NUM_CLASSES, NUM_POINTS, DATASET_PATH)
+    train_set = CARLA_Seg(NUM_CLASSES, NUM_POINTS, DATASET_PATH)
     train_loader = DataLoader(train_set, batch_size=bs, shuffle=True, pin_memory=True, num_workers=4)
 
     # get the device

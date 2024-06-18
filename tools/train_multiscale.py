@@ -6,7 +6,7 @@ import os
 import datetime
 from argparse import ArgumentParser
 sys.path.append(".")
-from ndtnetpp.datasets.CARLA_NDT_Seg import CARLA_NDT_Seg
+from ndtnetpp.datasets.CARLA_Seg import CARLA_Seg
 from ndtnetpp.models.ndtnet import NDTNetClassification, NDTNetSegmentation
 from ndtnetpp.models.ndtnetpp import NDTNetppClassification, NDTNetppSegmentation
 
@@ -40,9 +40,9 @@ if __name__ == '__main__':
     if "classification" in args.task:
         raise NotImplementedError("Classification task not implemented yet.")
     elif "segmentation" in args.task:
-        train_set = CARLA_NDT_Seg(int(args.n_classes), desired_nds, args.train_path)
-        val_set = CARLA_NDT_Seg(int(args.n_classes), desired_nds, args.val_path)
-        test_set = CARLA_NDT_Seg(int(args.n_classes), desired_nds, args.test_path)
+        train_set = CARLA_Seg(int(args.n_classes), desired_nds, args.train_path)
+        val_set = CARLA_Seg(int(args.n_classes), desired_nds, args.val_path)
+        test_set = CARLA_Seg(int(args.n_classes), desired_nds, args.test_path)
     else:
         raise ValueError(f"Unknown task: {args.task}")
     print("done.")
