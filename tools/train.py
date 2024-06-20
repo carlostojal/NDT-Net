@@ -25,19 +25,19 @@ def ndt_preprocessing(num_nds: int, points: torch.Tensor, classes: torch.Tensor 
     """
 
     # create the empty tensors
-    points_new = torch.empty((points.shape[0], num_nds, 3), dtype=torch.float32)
-    covs_new = torch.empty((points.shape[0], num_nds, 9), dtype=torch.float32)
-    classes_new = torch.empty((points.shape[0], num_nds, num_classes+1), dtype=torch.float32)
+    points_new = torch.empty((points.shape[0], num_nds, 3), dtype=torch.float32).to(points.device)
+    covs_new = torch.empty((points.shape[0], num_nds, 9), dtype=torch.float32).to(points.device)
+    classes_new = torch.empty((points.shape[0], num_nds, num_classes+1), dtype=torch.float32).to(points.device)
 
     # iterate the batch dimension
     for b in range(points.shape[0]):
 
         # convert the points tensor to a numpy array
-        points_np = points.cpu().numpy().astype(np.float64)
+        points_np = points[b].cpu().numpy().astype(np.float64)
 
         # convert classes tensor from one-hot encoding to class tags only and then to a numpy array
         if classes is not None:
-            classes_np = torch.argmax(classes, dim=2).cpu().numpy().astype(np.uint16)
+            classes_np = torch.argmax(classes[b], dim=1).cpu().numpy().astype(np.uint16)
         else:
             classes_np = None
 
@@ -45,12 +45,17 @@ def ndt_preprocessing(num_nds: int, points: torch.Tensor, classes: torch.Tensor 
         sampler = NDT_Sampler(points_np, classes_np, num_classes)
 
         # downsample the point cloud
-        points_new, covs_new, classes_new = sampler.downsample(num_nds)
+        points_new_np, covs_new_np, classes_new_np = sampler.downsample(num_nds)
 
         # convert the numpy arrays to tensors
-        points_n = torch.from_numpy(points_new).to(points.device)
-        covs_n = torch.from_numpy(covs_new).to(points.device)
-        classes_n = torch.from_numpy(classes_new).to(points.device)
+        points_n = torch.from_numpy(points_new_np).to(points.device)
+        covs_n = torch.from_numpy(covs_new_np).to(points.device)
+        classes_n = torch.from_numpy(classes_new_np).to(points.device)
+
+        # convert the classes to one-hot encoding
+        classes_oh = torch.zeros((num_nds, num_classes+1)).float()
+        for ndi in range(num_nds):
+            classes_oh[ndi, int(classes_n[ndi])] = 1
 
         # destroy the sampler
         sampler.cleanup()
@@ -58,7 +63,7 @@ def ndt_preprocessing(num_nds: int, points: torch.Tensor, classes: torch.Tensor 
         # add the new tensors to the batch
         points_new[b] = points_n
         covs_new[b] = covs_n
-        classes_new[b] = classes_n
+        classes_new[b] = classes_oh
 
     # replace nan values with zeros
     points_new = torch.nan_to_num(points_new, nan=0.0, posinf=0.0, neginf=0.0)
@@ -73,7 +78,7 @@ if __name__ == '__main__':
     # parse the command-line arguments
     parser = ArgumentParser()
     parser.add_argument("--task", type=str, help="Task to perform (classification or segmentation)", default="segmentation", required=False)
-    parser.add_argument("--n_desired_nds", type=int, help="Number of desired normal distributions", default=4080, required=False)
+    parser.add_argument("--n_desired_nds", type=int, help="Number of desired normal distributions", default=2080, required=False)
     parser.add_argument("--n_samples", type=int, help="Number of samples to take initially using FPS", default=70000, required=False)
     parser.add_argument("--train_path", type=str, help="Path to the training dataset", required=True)
     parser.add_argument("--val_path", type=str, help="Path to the validation dataset", required=True)
@@ -95,9 +100,9 @@ if __name__ == '__main__':
     if "classification" in args.task:
         raise NotImplementedError("Classification task not implemented yet.")
     elif "segmentation" in args.task:
-        train_set = CARLA_Seg(int(args.n_classes), int(args.n_samples), int(args.n_desired_nds), args.train_path)
-        val_set = CARLA_Seg(int(args.n_classes), int(args.n_samples), int(args.n_desired_nds), args.val_path)
-        test_set = CARLA_Seg(int(args.n_classes), int(args.n_samples), int(args.n_desired_nds), args.test_path)
+        train_set = CARLA_Seg(int(args.n_classes), int(args.n_samples), args.train_path)
+        val_set = CARLA_Seg(int(args.n_classes), int(args.n_samples), args.val_path)
+        test_set = CARLA_Seg(int(args.n_classes), int(args.n_samples), args.test_path)
     else:
         raise ValueError(f"Unknown task: {args.task}")
     print("done.")
@@ -115,9 +120,9 @@ if __name__ == '__main__':
     # create the model
     print("Creating the model...", end=" ")
     if args.task == "classification":
-        model = NDTNetClassification(point_dim=3, num_classes=512, num_nds=int(args.n_desired_nds))
+        model = NDTNetClassification(point_dim=3, num_classes=512)
     elif args.task == "segmentation":
-        model = NDTNetSegmentation(point_dim=3, num_classes=int(args.n_classes), num_nds=int(args.n_desired_nds))
+        model = NDTNetSegmentation(point_dim=3, num_classes=int(args.n_classes))
     model = model.to(device)
     print("done.")
 
@@ -256,7 +261,9 @@ if __name__ == '__main__':
             if not os.path.exists(path):
                 os.makedirs(path)
             print("Saving the model...", end=" ")
-            torch.save(model.state_dict(), f"{path}/ndtnet_{epoch+1}.pth")
+            torch.save(model.state_dict(), f"{path}/ndtnet_{args.task}_{epoch+1}.pth")
+            # save the feature extractor
+            torch.save(model.feature_extractor.state_dict(), f"{path}/ndtnet_{args.task}_{epoch+1}.pth")
             print("done.")
 
     # test
