@@ -152,17 +152,16 @@ if __name__ == '__main__':
             acc = 0.0
             total_acc = 0.0
             total_loss = 0.0
-            for i, (pcl, covs, gt) in enumerate(val_loader):
+            for i, (pcl, gt) in enumerate(val_loader):
 
                 # move the data to the device
                 pcl = pcl.to(device)
-                covs = covs.to(device)
                 gt = gt.to(device)
 
                 curr_sample += int(args.batch_size)
 
                 # forward pass
-                pred = model(pcl, covs)
+                pred = model(pcl)
 
                 # compute the loss - cross entropy
                 loss = torch.nn.functional.cross_entropy(pred, gt)
@@ -205,16 +204,15 @@ if __name__ == '__main__':
         acc = 0.0
         total_acc = 0.0
         total_loss = 0.0
-        for i, (pcl, covs, gt) in enumerate(test_loader):
+        for i, (pcl, gt) in enumerate(test_loader):
             # move the data to the device
             pcl = pcl.to(device)
-            covs = covs.to(device)
             gt = gt.to(device)
 
             curr_sample += int(args.batch_size)
 
             # forward pass
-            pred = model(pcl, covs)
+            pred = model(pcl)
 
             # compute the loss - cross entropy
             loss = torch.nn.functional.cross_entropy(pred, gt)
