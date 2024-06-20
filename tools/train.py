@@ -6,7 +6,7 @@ import os
 import datetime
 from argparse import ArgumentParser
 sys.path.append(".")
-from ndtnetpp.datasets.CARLA_Seg import CARLA_Seg
+from ndtnetpp.datasets.CARLA_NDT_Seg import CARLA_Seg
 from ndtnetpp.models.ndtnet import NDTNetClassification, NDTNetSegmentation
 
 if __name__ == '__main__':
