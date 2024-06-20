@@ -137,8 +137,6 @@ class CARLA_Seg(Dataset):
         np_points = np.asarray(points)
         np_classes = np.asarray(classes, dtype=np.uint16)
 
-        print("CREATED THE NUMPY ARRAYS")
-
         # create the Open3D point cloud object
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(np_points)
@@ -146,8 +144,6 @@ class CARLA_Seg(Dataset):
         pcd.colors = o3d.utility.Vector3dVector([self.class_to_color(c) for c in np_classes])
         # downsample using FPS
         pcd = pcd.farthest_point_down_sample(self.n_samples)
-
-        print("SAMPLED USING FPS")
 
         # create a tensor from the points
         points = torch.tensor(np.asarray(pcd.points)).float()
@@ -160,7 +156,5 @@ class CARLA_Seg(Dataset):
         gt = torch.zeros((points.shape[0], self.n_classes+1)).float()
         for i in range(points.shape[0]):
             gt[i, int(np_classes[i])] = 1
-
-        print("RETURNING A SAMPLE")
 
         return points, gt

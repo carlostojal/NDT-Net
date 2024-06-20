@@ -109,13 +109,11 @@ if __name__ == '__main__':
 
             curr_sample += int(args.batch_size)
 
-            print("DOING A FORWARD PASS")
-
             # forward pass
             # remove the "1" dimension
             pcl = pcl.squeeze(1)
-            gt = gt.squeeze(1)
-            pred = model(pcl)
+            gt = gt.squeeze(1) # (batch_size, num_points, num_classes)
+            pred = model(pcl) # (batch_size, num_nds, num_classes)
 
             # compute the loss - cross entropy
             loss = torch.nn.functional.cross_entropy(pred, gt)
