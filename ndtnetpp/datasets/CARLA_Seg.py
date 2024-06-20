@@ -4,6 +4,7 @@ import numpy as np
 import open3d as o3d
 import os
 from typing import Tuple, List
+from ndtnetpp.preprocessing.ndt_legacy import NDT_Sampler
 
 class CARLA_Seg(Dataset):
     """
@@ -14,11 +15,12 @@ class CARLA_Seg(Dataset):
         n_samples (int): number of points to sample (unsing farthest point sampling)
         path (str): path to the dataset
     """
-    def __init__(self, n_classes: int, n_samples: int, path: str) -> None:
+    def __init__(self, n_classes: int, n_samples: int, num_desired_nds: int, path: str) -> None:
         super().__init__()
 
         self.n_classes: int = n_classes
         self.n_samples = n_samples
+        self.num_desired_nds =num_desired_nds
         self.path: str = path
 
         # verify that the path exists
@@ -140,21 +142,23 @@ class CARLA_Seg(Dataset):
         # create the Open3D point cloud object
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(np_points)
-        # assign the colors to the point cloud
-        pcd.colors = o3d.utility.Vector3dVector([self.class_to_color(c) for c in np_classes])
         # downsample using FPS
         pcd = pcd.farthest_point_down_sample(self.n_samples)
 
-        # create a tensor from the points
-        points = torch.tensor(np.asarray(pcd.points)).float()
+        # use NDT on the point cloud to get the correct number of class annotations
+        # create a numpy array from the points
+        np_points = np.asarray(pcd.points)
+        # instantiate the sampler
+        sampler = NDT_Sampler(np_points, np_classes, self.n_classes)
+        # downsample
+        np_points, _, np_classes = sampler.downsample(self.num_desired_nds) 
 
-        # create a list of classes from the colors
-        np_colors = np.asarray(pcd.colors)
-        np_classes = np.array([self.color_to_class(c) for c in np_colors])
+        # create a tensor from the original points
+        points = torch.tensor(np.asarray(pcd.points)).float()
         
         # make the ground truth tensor with one-hot encoding
-        gt = torch.zeros((points.shape[0], self.n_classes+1)).float()
-        for i in range(points.shape[0]):
+        gt = torch.zeros((np_classes.shape[0], self.n_classes+1)).float()
+        for i in range(np_classes.shape[0]):
             gt[i, int(np_classes[i])] = 1
 
         return points, gt
