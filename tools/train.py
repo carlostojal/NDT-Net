@@ -36,9 +36,9 @@ if __name__ == '__main__':
     if "classification" in args.task:
         raise NotImplementedError("Classification task not implemented yet.")
     elif "segmentation" in args.task:
-        train_set = CARLA_Seg(int(args.n_classes), int(args.n_samples), args.train_path)
-        val_set = CARLA_Seg(int(args.n_classes), int(args.n_samples), args.val_path)
-        test_set = CARLA_Seg(int(args.n_classes), int(args.n_samples), args.test_path)
+        train_set = CARLA_Seg(int(args.n_classes), int(args.n_samples), int(args.n_desired_nds), args.train_path)
+        val_set = CARLA_Seg(int(args.n_classes), int(args.n_samples), int(args.n_desired_nds), args.val_path)
+        test_set = CARLA_Seg(int(args.n_classes), int(args.n_samples), int(args.n_desired_nds), args.test_path)
     else:
         raise ValueError(f"Unknown task: {args.task}")
     print("done.")
@@ -67,7 +67,6 @@ if __name__ == '__main__':
 
     # initialize wandb
     print("Initializing wandb...", end=" ")
-    """
     wandb.init(project="ndtnetpp",
         name=f"{args.task}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}",
         config={
@@ -78,7 +77,6 @@ if __name__ == '__main__':
             "n_classes": args.n_classes,
             "optimizer": "Adam"
     })
-    """
     print("done.")
 
     LEARNING_RATE = args.learning_rate
@@ -92,6 +90,7 @@ if __name__ == '__main__':
         curr_sample = 0
         acc = 0.0
         total_acc = 0.0
+        total_loss = 0.0
         for i, (pcl, gt) in enumerate(train_loader):
             # move the data to the device
             pcl = pcl.to(device) # [B, R, N, 3], where R is the number of resolutions
@@ -121,6 +120,7 @@ if __name__ == '__main__':
             # backward pass
             optimizer.zero_grad()
             loss.backward()
+            total_loss += loss.item()
 
             # update the weights
             optimizer.step()
@@ -137,9 +137,10 @@ if __name__ == '__main__':
         print()
 
         mean_acc = total_acc / len(train_loader)
+        mean_loss = total_loss / len(train_loader)
 
         # log the loss to wandb
-        # wandb.log({"train_loss": loss.item(), "train_acc": acc, "train_acc_mean": mean_acc, "epoch": epoch+1})
+        wandb.log({"train_loss": loss.item(), "train_loss_mean": mean_loss, "train_acc": acc, "train_acc_mean": mean_acc, "epoch": epoch+1})
 
         # validation
         # set the model to evaluation mode
@@ -150,6 +151,7 @@ if __name__ == '__main__':
             curr_sample = 0
             acc = 0.0
             total_acc = 0.0
+            total_loss = 0.0
             for i, (pcl, covs, gt) in enumerate(val_loader):
 
                 # move the data to the device
@@ -164,6 +166,7 @@ if __name__ == '__main__':
 
                 # compute the loss - cross entropy
                 loss = torch.nn.functional.cross_entropy(pred, gt)
+                total_loss += loss.item()
 
                 # get the accuracy (one-hot encoding)
                 pred_classes = torch.argmax(pred, dim=2)
@@ -177,9 +180,10 @@ if __name__ == '__main__':
             print()
 
         mean_acc = total_acc / len(val_loader)
+        mean_loss = total_loss / len(val_loader)
         
         # log the loss to wandb
-        # wandb.log({"val_loss": loss.item(), "val_acc": acc, "val_acc_mean": mean_acc, "epoch": epoch+1})
+        wandb.log({"val_loss": loss.item(), "val_loss_mean": mean_loss, "val_acc": acc, "val_acc_mean": mean_acc, "epoch": epoch+1})
 
         # save every "save_every" epochs
         if (epoch+1) % int(args.save_every) == 0:
@@ -200,6 +204,7 @@ if __name__ == '__main__':
         curr_sample = 0
         acc = 0.0
         total_acc = 0.0
+        total_loss = 0.0
         for i, (pcl, covs, gt) in enumerate(test_loader):
             # move the data to the device
             pcl = pcl.to(device)
@@ -213,6 +218,7 @@ if __name__ == '__main__':
 
             # compute the loss - cross entropy
             loss = torch.nn.functional.cross_entropy(pred, gt)
+            total_loss += loss.item()
 
             # get the accuracy (one-hot encoding)
             pred_classes = torch.argmax(pred, dim=2)
@@ -226,11 +232,12 @@ if __name__ == '__main__':
     print()
 
     mean_acc = total_acc / len(test_loader)
+    mean_loss = total_loss / len(test_loader)
 
     # log the loss to wandb
-    # wandb.log({"test_loss": loss.item(), "test_acc": acc, "test_acc_mean": mean_acc})
+    wandb.log({"test_loss": loss.item(), "test_loss_mean": mean_loss, "test_acc": acc, "test_acc_mean": mean_acc})
 
     # finish the wandb run
-    # wandb.finish()
+    wandb.finish()
 
     print("Done.")
