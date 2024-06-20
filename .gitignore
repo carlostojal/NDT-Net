@@ -4,7 +4,6 @@ core_rust/target
 
 # ignore all pycache
 **/__pycache__/
-.vscode/
 .idea
 
 wandb/
