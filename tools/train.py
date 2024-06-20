@@ -56,9 +56,9 @@ if __name__ == '__main__':
     # create the model
     print("Creating the model...", end=" ")
     if args.task == "classification":
-        model = NDTNetClassification(3, 4096, 512)
+        model = NDTNetClassification(point_dim=3, num_classes=512, num_nds=int(args.n_desired_nds))
     elif args.task == "segmentation":
-        model = NDTNetSegmentation(3, int(args.n_classes))
+        model = NDTNetSegmentation(point_dim=3, num_classes=int(args.n_classes), num_nds=int(args.n_desired_nds))
     model = model.to(device)
     print("done.")
 
