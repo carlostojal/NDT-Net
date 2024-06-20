@@ -18,7 +18,7 @@ def ndt_preprocessing(num_nds: int, points: torch.Tensor, classes: torch.Tensor 
 
     Args:
         points (torch.Tensor): point cloud to be preprocessed (batch_size, num_points, 3)
-        classes (torch.Tensor): classes of the point cloud (batch_size, num_points)
+        classes (torch.Tensor): classes of the point cloud (batch_size, num_points, num_classes)
 
     Returns:
         Tuple[torch.Tensor, torch.Tensor]: normal distribution centers and its classes
@@ -35,9 +35,9 @@ def ndt_preprocessing(num_nds: int, points: torch.Tensor, classes: torch.Tensor 
         # convert the points tensor to a numpy array
         points_np = points.cpu().numpy().astype(np.float64)
 
-        # convert the classes tensor to a numpy array
+        # convert classes tensor from one-hot encoding to class tags only and then to a numpy array
         if classes is not None:
-            classes_np = classes.cpu().numpy().astype(np.uint16)
+            classes_np = torch.argmax(classes, dim=2).cpu().numpy().astype(np.uint16)
         else:
             classes_np = None
 
