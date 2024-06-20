@@ -95,7 +95,7 @@ class PointNet(nn.Module):
         self.t2 = TNet(in_dim=64)
 
 
-    def forward(self, points: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Forward pass of the PointNet
 
