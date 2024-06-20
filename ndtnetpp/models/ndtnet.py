@@ -195,9 +195,9 @@ class NDTNetClassification(nn.Module):
         self.conv2 = nn.Conv1d(512, 256, 1)
         self.conv3 = nn.Conv1d(256, num_classes, 1)
 
-    def forward(self, points: torch.Tensor, covariances: torch.Tensor) -> torch.Tensor:
+    def forward(self, points: torch.Tensor) -> torch.Tensor:
         # extract features
-        x, _ = self.feature_extractor(points, covariances)
+        x, _ = self.feature_extractor(points)
 
         # max pooling
         x = torch.max(x, 2, keepdim=True)[0]
@@ -232,10 +232,10 @@ class NDTNetSegmentation(nn.Module):
         self.bn2 = nn.BatchNorm1d(256)
         self.bn3 = nn.BatchNorm1d(128)
 
-    def forward(self, points: torch.Tensor, covariances: torch.Tensor) -> torch.Tensor:
+    def forward(self, points: torch.Tensor) -> torch.Tensor:
 
         # extract features
-        x, x_t2 = self.feature_extractor(points, covariances)
+        x, x_t2 = self.feature_extractor(points)
 
         # max pooling
         x, _ = torch.max(x, 2, keepdim=True) # (batch_size, 1024, 1) shape
