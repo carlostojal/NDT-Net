@@ -119,8 +119,6 @@ class NDT_Sampler:
             tuple[np.ndarray, np.ndarray, np.ndarray]: The downsampled point cloud, the covariances, and the classes.
         """
 
-        # TODO: THIS METHOD HAS A MEMORY LEAK
-
         # create the point cloud pointer
         pcl_ptr = self.pointcloud.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
 
