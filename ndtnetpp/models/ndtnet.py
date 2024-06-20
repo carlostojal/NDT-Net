@@ -183,13 +183,13 @@ class NDTNet(nn.Module):
 
 class NDTNetClassification(nn.Module):
 
-    def __init__(self, point_dim: int = 3, num_classes: int = 512) -> None:
+    def __init__(self, point_dim: int = 3, num_classes: int = 512, num_nds: int = 2048, feature_dim: int = 1024) -> None:
         super().__init__()
 
         self.point_dim = point_dim
         self.num_classes = num_classes
 
-        self.feature_extractor = NDTNet(point_dim)
+        self.feature_extractor = NDTNet(point_dim, num_nds=num_nds, feature_dim=feature_dim)
 
         self.conv1 = nn.Conv1d(1024, 512, 1)
         self.conv2 = nn.Conv1d(512, 256, 1)
@@ -214,14 +214,14 @@ class NDTNetClassification(nn.Module):
     
 class NDTNetSegmentation(nn.Module):
 
-    def __init__(self, point_dim: int = 3, num_classes: int = 16, feature_dim: int = 1024) -> None:
+    def __init__(self, point_dim: int = 3, num_classes: int = 16, num_nds: int = 2048, feature_dim: int = 1024) -> None:
         super().__init__()
 
         self.point_dim = point_dim
         self.num_classes = num_classes
         self.feature_dim = feature_dim
 
-        self.feature_extractor = NDTNet(point_dim)
+        self.feature_extractor = NDTNet(point_dim, feature_dim=feature_dim, num_nds=num_nds)
 
         self.conv1 = nn.Conv1d(self.feature_dim + 64, 512, 1) # 1088 = 1024 + 64
         self.conv2 = nn.Conv1d(512, 256, 1)
