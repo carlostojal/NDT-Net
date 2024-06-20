@@ -4,7 +4,6 @@ import numpy as np
 import open3d as o3d
 import os
 from typing import Tuple, List
-from ndtnetpp.preprocessing.ndt_legacy import NDT_Sampler
 
 class CARLA_Seg(Dataset):
     """
