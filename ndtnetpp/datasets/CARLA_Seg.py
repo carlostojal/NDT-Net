@@ -33,7 +33,7 @@ class CARLA_Seg(Dataset):
         # return the length of the filenames list
         return len(self.filenames)
 
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Get a sample composed by a point cloud and its segmentation ground truth.
 
@@ -48,13 +48,10 @@ class CARLA_Seg(Dataset):
         # retrieve the filename of the sample
         pcl_filename: str = os.path.join(self.path, self.filenames[idx])
 
-        # get the point cloud and the segmentation ground truth
-        if len(self.n_desired_nds) == 1:
-            pcl, cov, gt = self.get_data_pcl(pcl_filename)
-            return pcl, cov, gt
-        else:
-            pcl1, cov1, gt1, pcl2, cov2, gt2 = self.get_data_pcl(pcl_filename)
-            return pcl1, cov1, gt1, pcl2, cov2, gt2
+        pcl, gt = self.get_data_pcl(pcl_filename)
+
+        return pcl, gt
+            
         
     def color_to_class(self, color: np.array) -> int:
         """
@@ -116,7 +113,7 @@ class CARLA_Seg(Dataset):
             pcl = f.readlines()
         f.close()
 
-        # process each line
+        # process each line after the header
         for point in pcl[num_header_lines:]:
 
             data: List[int] = point.strip().split() # split the line to get each coordinate
@@ -140,6 +137,8 @@ class CARLA_Seg(Dataset):
         np_points = np.asarray(points)
         np_classes = np.asarray(classes, dtype=np.uint16)
 
+        print("CREATED THE NUMPY ARRAYS")
+
         # create the Open3D point cloud object
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(np_points)
@@ -147,6 +146,8 @@ class CARLA_Seg(Dataset):
         pcd.colors = o3d.utility.Vector3dVector([self.class_to_color(c) for c in np_classes])
         # downsample using FPS
         pcd = pcd.farthest_point_down_sample(self.n_samples)
+
+        print("SAMPLED USING FPS")
 
         # create a tensor from the points
         points = torch.tensor(np.asarray(pcd.points)).float()
@@ -159,5 +160,7 @@ class CARLA_Seg(Dataset):
         gt = torch.zeros((points.shape[0], self.n_classes+1)).float()
         for i in range(points.shape[0]):
             gt[i, int(np_classes[i])] = 1
+
+        print("RETURNING A SAMPLE")
 
         return points, gt

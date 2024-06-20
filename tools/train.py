@@ -67,6 +67,7 @@ if __name__ == '__main__':
 
     # initialize wandb
     print("Initializing wandb...", end=" ")
+    """
     wandb.init(project="ndtnetpp",
         name=f"{args.task}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}",
         config={
@@ -77,6 +78,7 @@ if __name__ == '__main__':
             "n_classes": args.n_classes,
             "optimizer": "Adam"
     })
+    """
     print("done.")
 
     LEARNING_RATE = args.learning_rate
@@ -90,10 +92,9 @@ if __name__ == '__main__':
         curr_sample = 0
         acc = 0.0
         total_acc = 0.0
-        for i, (pcl, covs, gt) in enumerate(train_loader):
+        for i, (pcl, gt) in enumerate(train_loader):
             # move the data to the device
             pcl = pcl.to(device) # [B, R, N, 3], where R is the number of resolutions
-            covs = covs.to(device)
             gt = gt.to(device)
 
             # skip batch if it has only one sample
@@ -108,12 +109,13 @@ if __name__ == '__main__':
 
             curr_sample += int(args.batch_size)
 
+            print("DOING A FORWARD PASS")
+
             # forward pass
             # remove the "1" dimension
             pcl = pcl.squeeze(1)
-            covs = covs.squeeze(1)
             gt = gt.squeeze(1)
-            pred = model(pcl, covs)
+            pred = model(pcl)
 
             # compute the loss - cross entropy
             loss = torch.nn.functional.cross_entropy(pred, gt)
@@ -139,7 +141,7 @@ if __name__ == '__main__':
         mean_acc = total_acc / len(train_loader)
 
         # log the loss to wandb
-        wandb.log({"train_loss": loss.item(), "train_acc": acc, "train_acc_mean": mean_acc, "epoch": epoch+1})
+        # wandb.log({"train_loss": loss.item(), "train_acc": acc, "train_acc_mean": mean_acc, "epoch": epoch+1})
 
         # validation
         # set the model to evaluation mode
@@ -179,7 +181,7 @@ if __name__ == '__main__':
         mean_acc = total_acc / len(val_loader)
         
         # log the loss to wandb
-        wandb.log({"val_loss": loss.item(), "val_acc": acc, "val_acc_mean": mean_acc, "epoch": epoch+1})
+        # wandb.log({"val_loss": loss.item(), "val_acc": acc, "val_acc_mean": mean_acc, "epoch": epoch+1})
 
         # save every "save_every" epochs
         if (epoch+1) % int(args.save_every) == 0:
@@ -228,9 +230,9 @@ if __name__ == '__main__':
     mean_acc = total_acc / len(test_loader)
 
     # log the loss to wandb
-    wandb.log({"test_loss": loss.item(), "test_acc": acc, "test_acc_mean": mean_acc})
+    # wandb.log({"test_loss": loss.item(), "test_acc": acc, "test_acc_mean": mean_acc})
 
     # finish the wandb run
-    wandb.finish()
+    # wandb.finish()
 
     print("Done.")
