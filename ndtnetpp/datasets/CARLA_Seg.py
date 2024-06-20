@@ -141,6 +141,8 @@ class CARLA_Seg(Dataset):
         # create the Open3D point cloud object
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(np_points)
+        # assign the colors to the point cloud
+        pcd.colors = o3d.utility.Vector3dVector([self.class_to_color(c) for c in np_classes])
         # downsample using FPS
         pcd = pcd.farthest_point_down_sample(self.n_samples)
 
