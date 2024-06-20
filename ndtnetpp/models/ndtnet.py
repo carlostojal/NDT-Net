@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from enum import Enum
+from ndtnetpp.preprocessing.ndt_legacy import NDT_Sampler
 
 class TNet(nn.Module):
     """
@@ -73,7 +74,7 @@ class NDTNet(nn.Module):
     def __init__(self, 
                  point_dim: int = 3, 
                  feature_dim: int = 1024, 
-                 extra_type: AdditionalFeatures = AdditionalFeatures.COVARIANCES) -> None:
+                 num_nds: int = 2048) -> None:
         """
         Constructor of the NDT-Net
 
@@ -86,16 +87,9 @@ class NDTNet(nn.Module):
 
         self.point_dim = point_dim
         self.feature_dim = feature_dim
+        self.num_nds = num_nds
 
-        self.extra_dim = 0
-        if extra_type == NDTNet.AdditionalFeatures.COVARIANCES:
-            self.extra_dim = self.point_dim**2
-        elif extra_type == NDTNet.AdditionalFeatures.FEATURE_VECTOR:
-            self.extra_dim = self.feature_dim + self.point_dim**2
-        elif extra_type == NDTNet.AdditionalFeatures.NONE:
-            self.extra_dim = 0
-
-        self.conv1 = nn.Conv1d(self.point_dim+self.extra_dim, 64, 1)
+        self.conv1 = nn.Conv1d(self.point_dim+(self.point_dim**2), 64, 1)
         self.conv2 = nn.Conv1d(64, 128, 1)
         self.conv3 = nn.Conv1d(128, self.feature_dim, 1)
 
@@ -107,7 +101,7 @@ class NDTNet(nn.Module):
         self.t2 = TNet(in_dim=64)
 
 
-    def forward(self, points: torch.Tensor, extra: torch.Tensor) -> torch.Tensor:
+    def forward(self, points: torch.Tensor) -> torch.Tensor:
         """
         Forward pass of the NDT-Net
 
@@ -118,9 +112,36 @@ class NDTNet(nn.Module):
         Returns:
         - Tuple[torch.Tensor, torch.Tensor]: tensor with shape (batch_size, 1024, num_points) and the feature transform
         """
+
+        # convert the pointcloud to a numpy array
+        points_np = points.detach().cpu().numpy()
+
+        # create empty points and covariances numpy arrays
+        points_np_new = points_np[points_np.shape[0], self.num_nds, self.point_dim]
+        covs_np_new = points_np[points_np.shape[0], self.num_nds, self.point_dim**2]
+
+        # iterate the batch dimension, processing each sample in the batch
+        for b in range(points_np.shape[0]):
+
+            # create an instance of the NDT_Sampler class
+            sampler = NDT_Sampler(points_np[b])
+
+            # compute the normal distributions
+            points_np_n, covs_np_n, _ = sampler.downsample(self.num_nds)
+
+            # assign the normal distributions to the new numpy arrays
+            points_np_new[b] = points_np_n
+            covs_np_new[b] = covs_np_n
+
+            # free the sampler instance
+            sampler.cleanup()
+
+        # convert the numpy arrays to torch tensors and copy to the device
+        points = torch.from_numpy(points_np_new).to(points.device)
+        covs = torch.from_numpy(covs_np_new).to(points.device)
         
         # concatenate the covariances to the input tensor, making 12-dimensional points
-        x = torch.cat((points, extra), dim=2)
+        x = torch.cat((points, covs), dim=2)
 
         B, N, D = x.size()
 
