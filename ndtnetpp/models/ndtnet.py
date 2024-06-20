@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+import numpy as np
 from enum import Enum
 from ndtnetpp.preprocessing.ndt_legacy import NDT_Sampler
 
@@ -113,11 +114,11 @@ class NDTNet(nn.Module):
         """
 
         # convert the pointcloud to a numpy array
-        points_np = points.detach().cpu().numpy()
+        points_np = points.detach().cpu().numpy().astype(np.float64) # must be 64-bit float because NDT is using doubles
 
         # create empty points and covariances numpy arrays
-        points_np_new = points_np[points_np.shape[0], self.num_nds, self.point_dim]
-        covs_np_new = points_np[points_np.shape[0], self.num_nds, self.point_dim**2]
+        points_np_new = np.empty((points_np.shape[0], self.num_nds, self.point_dim), dtype=np.float32)
+        covs_np_new = np.empty((points_np.shape[0], self.num_nds, self.point_dim**2), dtype=np.float32)
 
         # iterate the batch dimension, processing each sample in the batch
         for b in range(points_np.shape[0]):
@@ -162,6 +163,7 @@ class NDTNet(nn.Module):
         # concatenate the transformed points and covariances
         x = torch.cat((p, cov), dim=2) # [B, N, 12]
         x = x.transpose(2, 1) # [B, 12, N]
+        x = torch.nan_to_num(x, nan=0.0)
 
         # MLP
         x = self.bn1(self.conv1(x))
@@ -235,7 +237,7 @@ class NDTNetSegmentation(nn.Module):
     def forward(self, points: torch.Tensor) -> torch.Tensor:
 
         # extract features
-        x, x_t2 = self.feature_extractor(points)
+        x, x_t2 = self.feature_extractor(points) # (batch_size, 1024, 4080)
 
         # max pooling
         x, _ = torch.max(x, 2, keepdim=True) # (batch_size, 1024, 1) shape
