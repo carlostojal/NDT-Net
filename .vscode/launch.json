@@ -5,6 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Train PointNet",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "tools/train_pointnet.py",
+            "console": "integratedTerminal",
+            "args": "--batch_size 16 --train_path ../data/PCL_Segmentation_3000/train --val_path ../data/PCL_Segmentation_3000/validation --test_path ../data/PCL_Segmentation_3000/test"
+        },
+        {
             "name": "Train NDT-Net",
             "type": "debugpy",
             "request": "launch",
