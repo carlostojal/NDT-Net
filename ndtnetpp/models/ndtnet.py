@@ -107,10 +107,9 @@ class NDTNet(nn.Module):
 
         Args:
         - points (torch.Tensor): the points tensor, shaped (batch_size, num_points, point_dim)
-        - extra (torch.Tensor): the additional features tensor. can be either flattened covariances or a feature vector
 
         Returns:
-        - Tuple[torch.Tensor, torch.Tensor]: tensor with shape (batch_size, 1024, num_points) and the feature transform
+        - Tuple[torch.Tensor, torch.Tensor]: tensor with shape (batch_size, feature_dim, num_nds) and the feature transform
         """
 
         # convert the pointcloud to a numpy array
