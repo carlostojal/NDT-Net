@@ -1,13 +1,72 @@
 import torch
 from torch.utils.data import DataLoader
+import numpy as np
 import wandb
 import sys
 import os
 import datetime
+from typing import Tuple
 from argparse import ArgumentParser
 sys.path.append(".")
-from ndtnetpp.datasets.CARLA_NDT_Seg import CARLA_Seg
+from ndtnetpp.datasets.CARLA_Seg import CARLA_Seg
 from ndtnetpp.models.ndtnet import NDTNetClassification, NDTNetSegmentation
+from ndtnetpp.preprocessing.ndt_legacy import NDT_Sampler
+
+def ndt_preprocessing(num_nds: int, points: torch.Tensor, classes: torch.Tensor = None, num_classes: int = None)-> Tuple[torch.Tensor, torch.Tensor]:
+    """
+    Preprocess the point cloud to be used in the NDTNet.
+
+    Args:
+        points (torch.Tensor): point cloud to be preprocessed (batch_size, num_points, 3)
+        classes (torch.Tensor): classes of the point cloud (batch_size, num_points)
+
+    Returns:
+        Tuple[torch.Tensor, torch.Tensor]: normal distribution centers and its classes
+    """
+
+    # create the empty tensors
+    points_new = torch.empty((points.shape[0], num_nds, 3), dtype=torch.float32)
+    covs_new = torch.empty((points.shape[0], num_nds, 9), dtype=torch.float32)
+    classes_new = torch.empty((points.shape[0], num_nds, num_classes+1), dtype=torch.float32)
+
+    # iterate the batch dimension
+    for b in range(points.shape[0]):
+
+        # convert the points tensor to a numpy array
+        points_np = points.cpu().numpy().astype(np.float64)
+
+        # convert the classes tensor to a numpy array
+        if classes is not None:
+            classes_np = classes.cpu().numpy().astype(np.uint16)
+        else:
+            classes_np = None
+
+        # create the NDT sampler
+        sampler = NDT_Sampler(points_np, classes_np, num_classes)
+
+        # downsample the point cloud
+        points_new, covs_new, classes_new = sampler.downsample(num_nds)
+
+        # convert the numpy arrays to tensors
+        points_n = torch.from_numpy(points_new).to(points.device)
+        covs_n = torch.from_numpy(covs_new).to(points.device)
+        classes_n = torch.from_numpy(classes_new).to(points.device)
+
+        # destroy the sampler
+        sampler.cleanup()
+
+        # add the new tensors to the batch
+        points_new[b] = points_n
+        covs_new[b] = covs_n
+        classes_new[b] = classes_n
+
+    # replace nan values with zeros
+    points_new = torch.nan_to_num(points_new, nan=0.0, posinf=0.0, neginf=0.0)
+    covs_new = torch.nan_to_num(covs_new, nan=0.0, posinf=0.0, neginf=0.0)
+    classes_new = torch.nan_to_num(classes_new, nan=0.0, posinf=0.0, neginf=0.0)
+
+    return points_new, covs_new, classes_new
+
 
 if __name__ == '__main__':
 
@@ -112,7 +171,11 @@ if __name__ == '__main__':
             # remove the "1" dimension
             pcl = pcl.squeeze(1)
             gt = gt.squeeze(1) # (batch_size, num_points, num_classes)
-            pred = model(pcl) # (batch_size, num_nds, num_classes)
+
+            # preprocess the batch
+            pcl, covs, gt = ndt_preprocessing(int(args.n_desired_nds), pcl, gt, int(args.n_classes))
+
+            pred = model(pcl, covs) # (batch_size, num_nds, num_classes)
 
             # compute the loss - cross entropy
             loss = torch.nn.functional.cross_entropy(pred, gt)
@@ -157,6 +220,9 @@ if __name__ == '__main__':
                 # move the data to the device
                 pcl = pcl.to(device)
                 gt = gt.to(device)
+
+                # preprocess the batch
+                pcl, covs, gt = ndt_preprocessing(int(args.n_desired_nds), pcl, gt, int(args.n_classes))
 
                 curr_sample += int(args.batch_size)
 
@@ -208,6 +274,9 @@ if __name__ == '__main__':
             # move the data to the device
             pcl = pcl.to(device)
             gt = gt.to(device)
+
+            # preprocess the batch
+            pcl, covs, gt = ndt_preprocessing(int(args.n_desired_nds), pcl, gt, int(args.n_classes))
 
             curr_sample += int(args.batch_size)
 
