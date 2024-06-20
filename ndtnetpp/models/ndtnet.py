@@ -75,7 +75,7 @@ class NDTNet(nn.Module):
     def __init__(self, 
                  point_dim: int = 3, 
                  feature_dim: int = 1024, 
-                 num_nds: int = 2048) -> None:
+                 extra_type: AdditionalFeatures = AdditionalFeatures.COVARIANCES) -> None:
         """
         Constructor of the NDT-Net
 
@@ -88,9 +88,16 @@ class NDTNet(nn.Module):
 
         self.point_dim = point_dim
         self.feature_dim = feature_dim
-        self.num_nds = num_nds
 
-        self.conv1 = nn.Conv1d(self.point_dim+(self.point_dim**2), 64, 1)
+        self.extra_dim = 0
+        if extra_type == NDTNet.AdditionalFeatures.COVARIANCES:
+            self.extra_dim = self.point_dim**2
+        elif extra_type == NDTNet.AdditionalFeatures.FEATURE_VECTOR:
+            self.extra_dim = self.feature_dim + self.point_dim**2
+        elif extra_type == NDTNet.AdditionalFeatures.NONE:
+            self.extra_dim = 0
+
+        self.conv1 = nn.Conv1d(self.point_dim+self.extra_dim, 64, 1)
         self.conv2 = nn.Conv1d(64, 128, 1)
         self.conv3 = nn.Conv1d(128, self.feature_dim, 1)
 
@@ -102,46 +109,20 @@ class NDTNet(nn.Module):
         self.t2 = TNet(in_dim=64)
 
 
-    def forward(self, points: torch.Tensor) -> torch.Tensor:
+    def forward(self, points: torch.Tensor, extra: torch.Tensor) -> torch.Tensor:
         """
         Forward pass of the NDT-Net
 
         Args:
         - points (torch.Tensor): the points tensor, shaped (batch_size, num_points, point_dim)
+        - extra (torch.Tensor): the additional features tensor. can be either flattened covariances or a feature vector
 
         Returns:
-        - Tuple[torch.Tensor, torch.Tensor]: tensor with shape (batch_size, feature_dim, num_nds) and the feature transform
+        - Tuple[torch.Tensor, torch.Tensor]: tensor with shape (batch_size, 1024, num_points) and the feature transform
         """
-
-        # convert the pointcloud to a numpy array
-        points_np = points.detach().cpu().numpy().astype(np.float64) # must be 64-bit float because NDT is using doubles
-
-        # create empty points and covariances numpy arrays
-        points_np_new = np.empty((points_np.shape[0], self.num_nds, self.point_dim), dtype=np.float32)
-        covs_np_new = np.empty((points_np.shape[0], self.num_nds, self.point_dim**2), dtype=np.float32)
-
-        # iterate the batch dimension, processing each sample in the batch
-        for b in range(points_np.shape[0]):
-
-            # create an instance of the NDT_Sampler class
-            sampler = NDT_Sampler(points_np[b])
-
-            # compute the normal distributions
-            points_np_n, covs_np_n, _ = sampler.downsample(self.num_nds)
-
-            # assign the normal distributions to the new numpy arrays
-            points_np_new[b] = points_np_n
-            covs_np_new[b] = covs_np_n
-
-            # free the sampler instance
-            sampler.cleanup()
-
-        # convert the numpy arrays to torch tensors and copy to the device
-        points = torch.from_numpy(points_np_new).to(points.device)
-        covs = torch.from_numpy(covs_np_new).to(points.device)
         
         # concatenate the covariances to the input tensor, making 12-dimensional points
-        x = torch.cat((points, covs), dim=2)
+        x = torch.cat((points, extra), dim=2)
 
         B, N, D = x.size()
 
@@ -163,7 +144,6 @@ class NDTNet(nn.Module):
         # concatenate the transformed points and covariances
         x = torch.cat((p, cov), dim=2) # [B, N, 12]
         x = x.transpose(2, 1) # [B, 12, N]
-        x = torch.nan_to_num(x, nan=0.0)
 
         # MLP
         x = self.bn1(self.conv1(x))
@@ -185,21 +165,21 @@ class NDTNet(nn.Module):
 
 class NDTNetClassification(nn.Module):
 
-    def __init__(self, point_dim: int = 3, num_classes: int = 512, num_nds: int = 2048, feature_dim: int = 1024) -> None:
+    def __init__(self, point_dim: int = 3, num_classes: int = 512, feature_dim: int = 1024) -> None:
         super().__init__()
 
         self.point_dim = point_dim
         self.num_classes = num_classes
 
-        self.feature_extractor = NDTNet(point_dim, num_nds=num_nds, feature_dim=feature_dim)
+        self.feature_extractor = NDTNet(point_dim, feature_dim=feature_dim)
 
         self.conv1 = nn.Conv1d(1024, 512, 1)
         self.conv2 = nn.Conv1d(512, 256, 1)
         self.conv3 = nn.Conv1d(256, num_classes, 1)
 
-    def forward(self, points: torch.Tensor) -> torch.Tensor:
+    def forward(self, points: torch.Tensor, covariances: torch.Tensor) -> torch.Tensor:
         # extract features
-        x, _ = self.feature_extractor(points)
+        x, _ = self.feature_extractor(points, covariances)
 
         # max pooling
         x = torch.max(x, 2, keepdim=True)[0]
@@ -216,14 +196,14 @@ class NDTNetClassification(nn.Module):
     
 class NDTNetSegmentation(nn.Module):
 
-    def __init__(self, point_dim: int = 3, num_classes: int = 16, num_nds: int = 2048, feature_dim: int = 1024) -> None:
+    def __init__(self, point_dim: int = 3, num_classes: int = 16, feature_dim: int = 1024) -> None:
         super().__init__()
 
         self.point_dim = point_dim
         self.num_classes = num_classes
         self.feature_dim = feature_dim
 
-        self.feature_extractor = NDTNet(point_dim, feature_dim=feature_dim, num_nds=num_nds)
+        self.feature_extractor = NDTNet(point_dim, feature_dim=feature_dim)
 
         self.conv1 = nn.Conv1d(self.feature_dim + 64, 512, 1) # 1088 = 1024 + 64
         self.conv2 = nn.Conv1d(512, 256, 1)
@@ -234,10 +214,10 @@ class NDTNetSegmentation(nn.Module):
         self.bn2 = nn.BatchNorm1d(256)
         self.bn3 = nn.BatchNorm1d(128)
 
-    def forward(self, points: torch.Tensor) -> torch.Tensor:
+    def forward(self, points: torch.Tensor, covariances: torch.Tensor) -> torch.Tensor:
 
         # extract features
-        x, x_t2 = self.feature_extractor(points) # (batch_size, 1024, 4080)
+        x, x_t2 = self.feature_extractor(points, covariances) # (batch_size, 1024, 4080)
 
         # max pooling
         x, _ = torch.max(x, 2, keepdim=True) # (batch_size, 1024, 1) shape
