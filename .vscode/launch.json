@@ -1,0 +1,40 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Train NDT-Net",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "tools/train.py",
+            "console": "integratedTerminal",
+            "args": "--train_path ../data/PCL_Segmentation_1000_fixed/train --val_path ../data/PCL_Segmentation_1000_fixed/validation --test_path ../data/PCL_Segmentation_1000_fixed/test"
+        },
+        {
+            "name": "Train NDT-Net++",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "tools/train_multiscale.py",
+            "console": "integratedTerminal",
+            "args": "--task segmentation --n_desired_nds 8160 --n_desired_nds1 4080 --train_path ../data/PCL_Segmentation_1000_fixed/train --val_path ../data/PCL_Segmentation_1000_fixed/validation --test_path ../data/PCL_Segmentation_1000_fixed/test"
+        },
+        {
+            "name": "Hyper-parameter search NDT-Net",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "tools/hyperparameter_search.py",
+            "console": "integratedTerminal",
+            "args": "--dataset_path ../data/PCL_Segmentation_1000_fixed/train --num_trials 30"
+        },
+        {
+            "name": "Pruning visualization",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "tools/viz.py",
+            "console": "integratedTerminal",
+            "args": "--input ../data/PCL_Segmentation_1000_fixed/train/045516.ply --target 8160 --target1 4080"
+        }
+    ]
+}

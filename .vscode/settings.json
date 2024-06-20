@@ -1,0 +1,13 @@
+{
+    "files.associations": {
+        "float.h": "c",
+        "chrono": "cpp",
+        "ndt.h": "c",
+        "kullback_leibler.h": "c",
+        "pointclouds.h": "c",
+        "omp.h": "c",
+        "matrix.h": "c",
+        "normal_distributions.h": "c",
+        "random": "c"
+    }
+}
