@@ -10,67 +10,84 @@ from argparse import ArgumentParser
 sys.path.append(".")
 from ndtnetpp.datasets.CARLA_Seg import CARLA_Seg
 from ndtnetpp.models.ndtnet import NDTNetClassification, NDTNetSegmentation
-from ndtnetpp.preprocessing.ndt_legacy import NDT_Sampler
+from ndtnetpp.preprocessing.ndtnet_preprocessing import ndt_preprocessing
 
-def ndt_preprocessing(num_nds: int, points: torch.Tensor, classes: torch.Tensor = None, num_classes: int = None)-> Tuple[torch.Tensor, torch.Tensor]:
+
+def run_one_epoch(model: torch.nn.Module, optimizer: torch.optim.Optimizer, loader: DataLoader, device: torch.device, args: ArgumentParser, epoch: int, mode: str="train")-> Tuple[float, float, float, float]:
     """
-    Preprocess the point cloud to be used in the NDTNet.
+    Run one epoch of the training/validation/test loop.
 
     Args:
-        points (torch.Tensor): point cloud to be preprocessed (batch_size, num_points, 3)
-        classes (torch.Tensor): classes of the point cloud (batch_size, num_points, num_classes)
+        model (torch.nn.Module): model to be trained/evaluated
+        optimizer (torch.optim.Optimizer): optimizer to be used
+        loader (DataLoader): data loader
+        device (torch.device): device to run the computations
+        args (ArgumentParser): command-line arguments
+        epoch (int): current epoch
+        mode (str, optional): mode of the loop (train, val, test). Defaults to "train".
 
     Returns:
-        Tuple[torch.Tensor, torch.Tensor]: normal distribution centers and its classes
+        Tuple[float, float, float, float]: loss, mean loss, accuracy, mean accuracy
     """
 
-    # create the empty tensors
-    points_new = torch.empty((points.shape[0], num_nds, 3), dtype=torch.float32).to(points.device)
-    covs_new = torch.empty((points.shape[0], num_nds, 9), dtype=torch.float32).to(points.device)
-    classes_new = torch.empty((points.shape[0], num_nds, num_classes+1), dtype=torch.float32).to(points.device)
+    # set the model to training mode
+    if mode == "train":
+        model.train()
+    else:
+        model.eval()
 
-    # iterate the batch dimension
-    for b in range(points.shape[0]):
+    curr_sample = 0
+    acc = 0.0
+    total_acc = 0.0
+    total_loss = 0.0
+    for i, (pcl, gt) in enumerate(loader):
+        # move the data to the device
+        pcl = pcl.to(device) # [B, R, N, 3], where R is the number of resolutions
+        gt = gt.to(device)
 
-        # convert the points tensor to a numpy array
-        points_np = points[b].cpu().numpy().astype(np.float64)
+        # skip batch if it has only one sample
+        if pcl.shape[0] == 1:
+            continue
 
-        # convert classes tensor from one-hot encoding to class tags only and then to a numpy array
-        if classes is not None:
-            classes_np = torch.argmax(classes[b], dim=1).cpu().numpy().astype(np.uint16)
-        else:
-            classes_np = None
+        # adjust learning rate
+        if epoch+1 % 20 == 0:
+            LEARNING_RATE *= 0.5
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = LEARNING_RATE
 
-        # create the NDT sampler
-        sampler = NDT_Sampler(points_np, classes_np, num_classes)
+        curr_sample += int(args.batch_size)
 
-        # downsample the point cloud
-        points_new_np, covs_new_np, classes_new_np = sampler.downsample(num_nds)
+        # forward pass
+        # remove the "1" dimension
+        pcl = pcl.squeeze(1)
+        gt = gt.squeeze(1) # (batch_size, num_points, num_classes)
 
-        # convert the numpy arrays to tensors
-        points_n = torch.from_numpy(points_new_np).to(points.device)
-        covs_n = torch.from_numpy(covs_new_np).to(points.device)
-        classes_n = torch.from_numpy(classes_new_np).to(points.device)
+        # preprocess the batch
+        pcl, covs, gt = ndt_preprocessing(int(args.n_desired_nds), pcl, gt, int(args.n_classes))
 
-        # convert the classes to one-hot encoding
-        classes_oh = torch.zeros((num_nds, num_classes+1)).float()
-        for ndi in range(num_nds):
-            classes_oh[ndi, int(classes_n[ndi])] = 1
+        pred = model(pcl, covs) # (batch_size, num_nds, num_classes)
 
-        # destroy the sampler
-        sampler.cleanup()
+        # compute the loss - cross entropy
+        loss = torch.nn.functional.cross_entropy(pred, gt)
 
-        # add the new tensors to the batch
-        points_new[b] = points_n
-        covs_new[b] = covs_n
-        classes_new[b] = classes_oh
+        # backward pass
+        optimizer.zero_grad()
+        loss.backward()
+        total_loss += loss.item()
 
-    # replace nan values with zeros
-    points_new = torch.nan_to_num(points_new, nan=0.0, posinf=0.0, neginf=0.0)
-    covs_new = torch.nan_to_num(covs_new, nan=0.0, posinf=0.0, neginf=0.0)
-    classes_new = torch.nan_to_num(classes_new, nan=0.0, posinf=0.0, neginf=0.0)
+        # update the weights
+        optimizer.step()
 
-    return points_new, covs_new, classes_new
+        # get the accuracy (one-hot encoding)
+        pred_classes = torch.argmax(pred, dim=2)
+        gt_classes = torch.argmax(gt, dim=2)
+        acc = torch.sum(pred_classes == gt_classes).item() / float(int(args.batch_size) * int(args.n_desired_nds))
+        total_acc += acc
+
+        # log the loss
+        print(f"\r{mode} sample ({curr_sample}/{len(train_loader)*int(args.batch_size)}): {mode}_loss: {loss.item()}, {mode}_acc: {acc}", end="")
+
+    return loss.item(), total_loss / len(train_loader), acc, total_acc / len(train_loader)
 
 
 if __name__ == '__main__':
@@ -92,8 +109,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     path = os.path.join(args.out_path, f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}")
-
-    desired_nds = [int(args.n_desired_nds)]
 
     # create the dataset
     print("Creating the dataset...", end=" ")
@@ -149,111 +164,16 @@ if __name__ == '__main__':
     for epoch in range(int(args.epochs)):
 
         print(f"--- EPOCH {epoch+1}/{args.epochs} ---")
-        # set the model to training mode
-        model.train()
-        curr_sample = 0
-        acc = 0.0
-        total_acc = 0.0
-        total_loss = 0.0
-        for i, (pcl, gt) in enumerate(train_loader):
-            # move the data to the device
-            pcl = pcl.to(device) # [B, R, N, 3], where R is the number of resolutions
-            gt = gt.to(device)
 
-            # skip batch if it has only one sample
-            if pcl.shape[0] == 1:
-                continue
-
-            # adjust learning rate
-            if epoch+1 % 20 == 0:
-                LEARNING_RATE *= 0.5
-                for param_group in optimizer.param_groups:
-                    param_group['lr'] = LEARNING_RATE
-
-            curr_sample += int(args.batch_size)
-
-            # forward pass
-            # remove the "1" dimension
-            pcl = pcl.squeeze(1)
-            gt = gt.squeeze(1) # (batch_size, num_points, num_classes)
-
-            # preprocess the batch
-            pcl, covs, gt = ndt_preprocessing(int(args.n_desired_nds), pcl, gt, int(args.n_classes))
-
-            pred = model(pcl, covs) # (batch_size, num_nds, num_classes)
-
-            # compute the loss - cross entropy
-            loss = torch.nn.functional.cross_entropy(pred, gt)
-
-            # backward pass
-            optimizer.zero_grad()
-            loss.backward()
-            total_loss += loss.item()
-
-            # update the weights
-            optimizer.step()
-
-            # get the accuracy (one-hot encoding)
-            pred_classes = torch.argmax(pred, dim=2)
-            gt_classes = torch.argmax(gt, dim=2)
-            acc = torch.sum(pred_classes == gt_classes).item() / float(int(args.batch_size) * int(args.n_desired_nds))
-            total_acc += acc
-
-            # log the loss
-            print(f"\rTrain Sample ({curr_sample}/{len(train_loader)*int(args.batch_size)}): train_loss: {loss.item()}, train_acc: {acc}", end="")
-
+        # train
+        loss, mean_loss, acc, mean_acc = run_one_epoch(model, optimizer, train_loader, device, args, epoch, mode="train")
+        wandb.log({"train_loss": loss.item(), "train_loss_mean": mean_loss, "train_acc": acc, "train_acc_mean": mean_acc, "epoch": epoch+1})
         print()
 
-        mean_acc = total_acc / len(train_loader)
-        mean_loss = total_loss / len(train_loader)
-
-        # log the loss to wandb
-        wandb.log({"train_loss": loss.item(), "train_loss_mean": mean_loss, "train_acc": acc, "train_acc_mean": mean_acc, "epoch": epoch+1})
-
         # validation
-        # set the model to evaluation mode
-        model.eval()
-
-        # disable gradient computation
-        with torch.no_grad():
-            curr_sample = 0
-            acc = 0.0
-            total_acc = 0.0
-            total_loss = 0.0
-            for i, (pcl, gt) in enumerate(val_loader):
-
-                # move the data to the device
-                pcl = pcl.to(device)
-                gt = gt.to(device)
-
-                # preprocess the batch
-                pcl, covs, gt = ndt_preprocessing(int(args.n_desired_nds), pcl, gt, int(args.n_classes))
-
-                curr_sample += int(args.batch_size)
-
-                # forward pass
-                pred = model(pcl)
-
-                # compute the loss - cross entropy
-                loss = torch.nn.functional.cross_entropy(pred, gt)
-                total_loss += loss.item()
-
-                # get the accuracy (one-hot encoding)
-                pred_classes = torch.argmax(pred, dim=2)
-                gt_classes = torch.argmax(gt, dim=2)
-                acc = torch.sum(pred_classes == gt_classes).item() / float(int(args.batch_size) * int(args.n_desired_nds))
-                total_acc += acc
-
-                # log the loss
-                print(f"\rValidation Sample {curr_sample}/{len(val_loader)*int(args.batch_size)}: val_loss: {loss.item()}, val_acc: {acc}", end="")
-
-            print()
-
-        mean_acc = total_acc / len(val_loader)
-        mean_loss = total_loss / len(val_loader)
-        
-        # log the loss to wandb
+        loss, mean_loss, acc, mean_acc = run_one_epoch(model, optimizer, val_loader, device, args, epoch, mode="val")
         wandb.log({"val_loss": loss.item(), "val_loss_mean": mean_loss, "val_acc": acc, "val_acc_mean": mean_acc, "epoch": epoch+1})
+        print()
 
         # save every "save_every" epochs
         if (epoch+1) % int(args.save_every) == 0:
@@ -267,49 +187,9 @@ if __name__ == '__main__':
             print("done.")
 
     # test
-    # set the model to evaluation mode
-    model.eval()
-
-    # disable gradient computation
-    print("--- TEST ---")
-    with torch.no_grad():
-        curr_sample = 0
-        acc = 0.0
-        total_acc = 0.0
-        total_loss = 0.0
-        for i, (pcl, gt) in enumerate(test_loader):
-            # move the data to the device
-            pcl = pcl.to(device)
-            gt = gt.to(device)
-
-            # preprocess the batch
-            pcl, covs, gt = ndt_preprocessing(int(args.n_desired_nds), pcl, gt, int(args.n_classes))
-
-            curr_sample += int(args.batch_size)
-
-            # forward pass
-            pred = model(pcl)
-
-            # compute the loss - cross entropy
-            loss = torch.nn.functional.cross_entropy(pred, gt)
-            total_loss += loss.item()
-
-            # get the accuracy (one-hot encoding)
-            pred_classes = torch.argmax(pred, dim=2)
-            gt_classes = torch.argmax(gt, dim=2)
-            acc = torch.sum(pred_classes == gt_classes).item() / float(int(args.batch_size) * int(args.n_desired_nds))
-            total_acc += acc
-
-            # log the loss
-            print(f"\rTest Sample {curr_sample}/{len(test_loader)*int(args.batch_size)}: test_loss: {loss.item()}, test_acc: {acc}", end="")
-
-    print()
-
-    mean_acc = total_acc / len(test_loader)
-    mean_loss = total_loss / len(test_loader)
-
-    # log the loss to wandb
+    loss, mean_loss, acc, mean_acc = run_one_epoch(model, optimizer, test_loader, device, args, epoch, mode="test")
     wandb.log({"test_loss": loss.item(), "test_loss_mean": mean_loss, "test_acc": acc, "test_acc_mean": mean_acc})
+    print()
 
     # finish the wandb run
     wandb.finish()
