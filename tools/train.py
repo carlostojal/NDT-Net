@@ -167,12 +167,12 @@ if __name__ == '__main__':
 
         # train
         loss, mean_loss, acc, mean_acc = run_one_epoch(model, optimizer, train_loader, device, args, epoch, mode="train")
-        wandb.log({"train_loss": loss.item(), "train_loss_mean": mean_loss, "train_acc": acc, "train_acc_mean": mean_acc, "epoch": epoch+1})
+        wandb.log({"train_loss": loss, "train_loss_mean": mean_loss, "train_acc": acc, "train_acc_mean": mean_acc, "epoch": epoch+1})
         print()
 
         # validation
         loss, mean_loss, acc, mean_acc = run_one_epoch(model, optimizer, val_loader, device, args, epoch, mode="val")
-        wandb.log({"val_loss": loss.item(), "val_loss_mean": mean_loss, "val_acc": acc, "val_acc_mean": mean_acc, "epoch": epoch+1})
+        wandb.log({"val_loss": loss, "val_loss_mean": mean_loss, "val_acc": acc, "val_acc_mean": mean_acc, "epoch": epoch+1})
         print()
 
         # save every "save_every" epochs
@@ -188,7 +188,7 @@ if __name__ == '__main__':
 
     # test
     loss, mean_loss, acc, mean_acc = run_one_epoch(model, optimizer, test_loader, device, args, epoch, mode="test")
-    wandb.log({"test_loss": loss.item(), "test_loss_mean": mean_loss, "test_acc": acc, "test_acc_mean": mean_acc})
+    wandb.log({"test_loss": loss, "test_loss_mean": mean_loss, "test_acc": acc, "test_acc_mean": mean_acc})
     print()
 
     # finish the wandb run
