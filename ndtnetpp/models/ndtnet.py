@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import numpy as np
 from enum import Enum
-from ndtnetpp.preprocessing.ndt_legacy import NDT_Sampler
+from ..preprocessing.ndt_legacy import NDT_Sampler
 
 class TNet(nn.Module):
     """
@@ -74,14 +74,14 @@ class NDTNet(nn.Module):
 
     def __init__(self, 
                  point_dim: int = 3, 
-                 feature_dim: int = 1024, 
+                 feature_dim: int = 768, 
                  extra_type: AdditionalFeatures = AdditionalFeatures.COVARIANCES) -> None:
         """
         Constructor of the NDT-Net
 
         Args:
         - point_dim (int): the dimension of the input points. Default is 3.
-        - feature_dim (int): the dimension of the output features. Default is 1024.
+        - feature_dim (int): the dimension of the output features. Default is 768.
         - extra_type (str): the type of the additional features. Can be "none", "covariances" or "feature_vector". Default is "covariances".
         """
         super().__init__()
@@ -165,15 +165,16 @@ class NDTNet(nn.Module):
 
 class NDTNetClassification(nn.Module):
 
-    def __init__(self, point_dim: int = 3, num_classes: int = 512, feature_dim: int = 1024) -> None:
+    def __init__(self, point_dim: int = 3, num_classes: int = 512, feature_dim: int = 768) -> None:
         super().__init__()
 
         self.point_dim = point_dim
         self.num_classes = num_classes
+        self.feature_dim = feature_dim
 
         self.feature_extractor = NDTNet(point_dim, feature_dim=feature_dim)
 
-        self.conv1 = nn.Conv1d(1024, 512, 1)
+        self.conv1 = nn.Conv1d(self.feature_dim, 512, 1)
         self.conv2 = nn.Conv1d(512, 256, 1)
         self.conv3 = nn.Conv1d(256, num_classes, 1)
 

@@ -1,7 +1,7 @@
 import torch
 from typing import Tuple
 import numpy as np
-from ndtnetpp.preprocessing.ndt_legacy import NDT_Sampler
+from ..preprocessing.ndt_legacy import NDT_Sampler
 
 def ndt_preprocessing(num_nds: int, points: torch.Tensor, classes: torch.Tensor = None, num_classes: int = None)-> Tuple[torch.Tensor, torch.Tensor]:
     """

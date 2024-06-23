@@ -25,7 +25,7 @@ class kl_divergence_t(ctypes.Structure):
     ]
 
 # import the core_legacy shared library
-core = ctypes.cdll.LoadLibrary('core_legacy/build/libndtnetpp.so')
+core = ctypes.cdll.LoadLibrary('/usr/local/lib/libndtnetpp.so')
 
 # set the argument types
 core.ndt_downsample.argtypes = [
