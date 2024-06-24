@@ -39,7 +39,7 @@
 #define MIN_POINTS_GUESS 1 // minumum number of points to guess the number of normal distributions
 #define MAX_POINTS_GUESS 1000000 // maximum number of points to guess the number of normal distributions
 #define MIN_VOXEL_GUESS 0.01 // minimum voxel size guess
-#define MAX_VOXEL_GUESS 10.0 // maximum voxel size guess
+#define MAX_VOXEL_GUESS 30.0 // maximum voxel size guess
 #define MAX_GUESS_ITERATIONS 15 // maximum number of iterations to guess the number of normal distributions
 
 #ifdef __cplusplus

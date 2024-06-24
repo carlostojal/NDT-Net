@@ -18,7 +18,7 @@
             "request": "launch",
             "program": "tools/train.py",
             "console": "integratedTerminal",
-            "args": "--epochs 130 --batch_size 16 --train_path ../data/PCL_Segmentation_3000/train --val_path ../data/PCL_Segmentation_3000/validation --test_path ../data/PCL_Segmentation_3000/test"
+            "args": "--epochs 130 --batch_size 16 --n_desired_nds 576 --train_path ../data/PCL_Segmentation_3000/train --val_path ../data/PCL_Segmentation_3000/validation --test_path ../data/PCL_Segmentation_3000/test"
         },
         {
             "name": "Train NDT-Net++",
@@ -42,7 +42,7 @@
             "request": "launch",
             "program": "tools/viz.py",
             "console": "integratedTerminal",
-            "args": "--input ../data/PCL_Segmentation_3000/train/045516.ply --target 8160 --target1 4080"
+            "args": "--input ../data/PCL_Segmentation_1000_fixed/train/045516.ply --target 576"
         }
     ]
 }
