@@ -18,7 +18,10 @@ def ndt_preprocessing(num_nds: int, points: torch.Tensor, classes: torch.Tensor 
     # create the empty tensors
     points_new = torch.empty((points.shape[0], num_nds, 3), dtype=torch.float32).to(points.device)
     covs_new = torch.empty((points.shape[0], num_nds, 9), dtype=torch.float32).to(points.device)
-    classes_new = torch.empty((points.shape[0], num_nds, num_classes+1), dtype=torch.float32).to(points.device)
+    if classes is not None:
+        classes_new = torch.empty((points.shape[0], num_nds, num_classes+1), dtype=torch.float32).to(points.device)
+    else:
+        classes_new = None
 
     # iterate the batch dimension
     for b in range(points.shape[0]):
@@ -41,12 +44,14 @@ def ndt_preprocessing(num_nds: int, points: torch.Tensor, classes: torch.Tensor 
         # convert the numpy arrays to tensors
         points_n = torch.from_numpy(points_new_np).to(points.device)
         covs_n = torch.from_numpy(covs_new_np).to(points.device)
-        classes_n = torch.from_numpy(classes_new_np).to(points.device)
+        if classes is not None:
+            classes_n = torch.from_numpy(classes_new_np).to(points.device)
 
-        # convert the classes to one-hot encoding
-        classes_oh = torch.zeros((num_nds, num_classes+1)).float()
-        for ndi in range(num_nds):
-            classes_oh[ndi, int(classes_n[ndi])] = 1
+        if classes is not None:
+            # convert the classes to one-hot encoding
+            classes_oh = torch.zeros((num_nds, num_classes+1)).float()
+            for ndi in range(num_nds):
+                classes_oh[ndi, int(classes_n[ndi])] = 1
 
         # destroy the sampler
         sampler.cleanup()
@@ -54,11 +59,15 @@ def ndt_preprocessing(num_nds: int, points: torch.Tensor, classes: torch.Tensor 
         # add the new tensors to the batch
         points_new[b] = points_n
         covs_new[b] = covs_n
-        classes_new[b] = classes_oh
+        if classes is not None:
+            classes_new[b] = classes_oh
 
     # replace nan values with zeros
     points_new = torch.nan_to_num(points_new, nan=0.0, posinf=0.0, neginf=0.0)
     covs_new = torch.nan_to_num(covs_new, nan=0.0, posinf=0.0, neginf=0.0)
-    classes_new = torch.nan_to_num(classes_new, nan=0.0, posinf=0.0, neginf=0.0)
+    if classes is not None:
+        classes_new = torch.nan_to_num(classes_new, nan=0.0, posinf=0.0, neginf=0.0)
+    else:
+        classes_new = None
 
     return points_new, covs_new, classes_new
