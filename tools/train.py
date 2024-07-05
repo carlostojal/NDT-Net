@@ -183,9 +183,9 @@ if __name__ == '__main__':
             if not os.path.exists(path):
                 os.makedirs(path)
             print("Saving the model...", end=" ")
-            torch.save(model.state_dict(), f"{path}/ndtnet_{args.task}_{epoch+1}.pth")
+            torch.save(model.state_dict(), f"{path}/ndtnet_{args.task}_full_{epoch+1}.pth")
             # save the feature extractor
-            torch.save(model.feature_extractor.state_dict(), f"{path}/ndtnet_{args.task}_{epoch+1}.pth")
+            torch.save(model.feature_extractor.state_dict(), f"{path}/ndtnet_{args.task}_backbone_{epoch+1}.pth")
             print("done.")
 
     # test
