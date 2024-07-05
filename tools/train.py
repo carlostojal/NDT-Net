@@ -85,9 +85,9 @@ def run_one_epoch(model: torch.nn.Module, optimizer: torch.optim.Optimizer, load
         total_acc += acc
 
         # log the loss
-        print(f"\r{mode} sample ({curr_sample}/{len(train_loader)*int(args.batch_size)}): {mode}_loss: {loss.item()}, {mode}_acc: {acc}", end="")
+        print(f"\r{mode} sample ({curr_sample}/{len(loader)*int(args.batch_size)}): {mode}_loss: {loss.item()}, {mode}_acc: {acc}", end="")
 
-    return loss.item(), total_loss / len(train_loader), acc, total_acc / len(train_loader)
+    return loss.item(), total_loss / len(loader), acc, total_acc / len(loader)
 
 
 if __name__ == '__main__':
@@ -102,7 +102,7 @@ if __name__ == '__main__':
     parser.add_argument("--test_path", type=str, help="Path to the test dataset", required=True)
     parser.add_argument("--out_path", type=str, help="Path to save the model", default="out", required=False)
     parser.add_argument("--epochs", type=int, help="Number of epochs", default=200, required=False)
-    parser.add_argument("--save_every", type=int, help="Save the model every n epochs", default=10, required=False)
+    parser.add_argument("--save_every", type=int, help="Save the model every n epochs", default=2, required=False)
     parser.add_argument("--batch_size", type=int, help="Batch size", default=16, required=False)
     parser.add_argument("--learning_rate", type=float, help="Learning rate", default=0.034, required=False)
     parser.add_argument("--n_classes", type=int, help="Number of classes. Don't count with unknown/no class", default=28, required=False)
@@ -154,6 +154,8 @@ if __name__ == '__main__':
             "batch_size": args.batch_size,
             "learning_rate": args.learning_rate,
             "n_classes": args.n_classes,
+            "n_distributions": args.n_desired_nds,
+            "n_samples": args.n_samples,
             "optimizer": "Adam"
     })
     print("done.")
