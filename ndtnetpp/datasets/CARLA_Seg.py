@@ -134,24 +134,36 @@ class CARLA_Seg(Dataset):
 
             n_points += 1
 
-        # create numpy arrays with the points
         np_points = np.asarray(points)
-        np_classes = np.asarray(classes, dtype=np.uint16)
 
+        # randomly select points
+        point_indexes = np.random.choice(np_points.shape[0], self.n_samples, replace=False)
+        np_points = np_points[point_indexes]
+
+        # create numpy arrays with the points
+        # np_points = np.asarray(points)
+        np_classes = np.asarray(classes, dtype=np.uint16)
+        np_classes = np_classes[point_indexes]
+
+        """
         # create the Open3D point cloud object
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(np_points)
         # assign the colors to the point cloud
         pcd.colors = o3d.utility.Vector3dVector([self.class_to_color(c) for c in np_classes])
         # downsample using FPS
-        pcd = pcd.farthest_point_down_sample(self.n_samples)
+        # pcd = pcd.farthest_point_down_sample(self.n_samples)
 
         # create a tensor from the points
-        points = torch.tensor(np.asarray(pcd.points)).float()
+        # points = torch.tensor(np.asarray(pcd.points)).float()
+        points = torch.tensor(np_points).float()
 
         # create a list of classes from the colors
         np_colors = np.asarray(pcd.colors)
         np_classes = np.array([self.color_to_class(c) for c in np_colors])
+        """
+
+        points = torch.tensor(np_points).float()
         
         # make the ground truth tensor with one-hot encoding
         gt = torch.zeros((np_classes.shape[0], self.n_classes+1)).float()
