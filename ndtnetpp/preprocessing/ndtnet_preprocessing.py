@@ -41,6 +41,9 @@ def ndt_preprocessing(num_nds: int, points: torch.Tensor, classes: torch.Tensor 
         # downsample the point cloud
         points_new_np, covs_new_np, classes_new_np = sampler.downsample(num_nds)
 
+        # destroy the sampler
+        sampler.cleanup()
+
         # convert the numpy arrays to tensors
         points_n = torch.from_numpy(points_new_np).to(points.device)
         covs_n = torch.from_numpy(covs_new_np).to(points.device)
@@ -52,9 +55,6 @@ def ndt_preprocessing(num_nds: int, points: torch.Tensor, classes: torch.Tensor 
             classes_oh = torch.zeros((num_nds, num_classes+1)).float()
             for ndi in range(num_nds):
                 classes_oh[ndi, int(classes_n[ndi])] = 1
-
-        # destroy the sampler
-        sampler.cleanup()
 
         # add the new tensors to the batch
         points_new[b] = points_n

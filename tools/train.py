@@ -188,10 +188,14 @@ if __name__ == '__main__':
             torch.save(model.feature_extractor.state_dict(), f"{path}/ndtnet_{args.task}_backbone_{epoch+1}.pth")
             print("done.")
 
+        del loss, mean_loss, acc, mean_acc
+
     # test
     loss, mean_loss, acc, mean_acc = run_one_epoch(model, optimizer, test_loader, device, args, epoch, mode="test")
     wandb.log({"test_loss": loss, "test_loss_mean": mean_loss, "test_acc": acc, "test_acc_mean": mean_acc})
     print()
+
+    del loss, mean_loss, acc, mean_acc
 
     # finish the wandb run
     wandb.finish()
