@@ -43,6 +43,7 @@ if __name__ == '__main__':
     parser.add_argument("--n_desired_nds", type=int, help="Number of desired normal distributions", default=1000, required=False)
     parser.add_argument("--n_samples", type=int, help="Number of samples to take initially using FPS", default=70000, required=False)
     parser.add_argument("--data_path", type=str, help="Path to the dataset", required=True)
+    parser.add_argument("--weights_path", type=str, help="Path to the model weights", required=True)
     parser.add_argument("--n_classes", type=int, help="Number of classes. Don't count with unknown/no class", default=28, required=False)
     parser.add_argument("--feature_dim", type=int, help="Dimension of the feature vectors.", default=768, required=False)
     args = parser.parse_args()
@@ -53,7 +54,7 @@ if __name__ == '__main__':
 
     # create the dataset
     print("Creating the dataset...", end=" ")
-    dataset = CARLA_Seg(int(args.n_classes), int(args.n_samples), args.train_path)
+    dataset = CARLA_Seg(int(args.n_classes), int(args.n_samples), args.data_path)
     print("done.")
 
     # create the dataloader
@@ -66,6 +67,11 @@ if __name__ == '__main__':
     model = NDTNetSegmentation(point_dim=3, num_classes=int(args.n_classes), feature_dim=int(args.feature_dim))
     # model = PointNetSegmentation(point_dim=3, num_classes=int(args.n_classes), feature_dim=int(args.feature_dim))
     model = model.to(device)
+    print("done.")
+
+    # load the model weights
+    print("Loading the model weights...", end=" ")
+    model.load_state_dict(torch.load(args.weights_path))
     print("done.")
 
     # set the model to evaluation mode
@@ -81,8 +87,15 @@ if __name__ == '__main__':
                 pcl = pcl.to(device)
                 gt = gt.to(device)
 
+                # remove the "1" dimension
+                pcl = pcl.squeeze(1)
+                gt = gt.squeeze(1) # (batch_size, num_points, num_classes)
+
+                # preprocess the batch
+                pcl, covs, gt = ndt_preprocessing(int(args.n_desired_nds), pcl, gt, int(args.n_classes))
+
                 # infer the model
-                pred = model(pcl)
+                pred = model(pcl, covs)
 
                 # get the predicted classes tensor
                 pred_classes = torch.argmax(pred, dim=2)
