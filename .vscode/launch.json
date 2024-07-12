@@ -18,7 +18,15 @@
             "request": "launch",
             "program": "tools/train.py",
             "console": "integratedTerminal",
-            "args": "--epochs 130 --batch_size 16 --n_desired_nds 1000 --train_path ../../../../../data/PCL_Segmentation_3000/train --val_path ../../../../../data/PCL_Segmentation_3000/validation --test_path ../../../../../data/PCL_Segmentation_3000/test --out_path out/ndtnet"
+            "args": "--epochs 100 --batch_size 1 --n_samples 2000 --n_desired_nds 1000 --feature_dim 768 --train_path /data/PCL_Segmentation_1000_fixed/train --val_path /data/PCL_Segmentation_1000_fixed/validation --test_path /data/PCL_Segmentation_1000_fixed/test --out_path out/ndtnet/test"
+        },
+        {
+            "name": "Visualize Segmentation",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "tools/seg_viz.py",
+            "console": "integratedTerminal",
+            "args": "--n_desired_nds 1000 --n_samples 2000 --data_path /data/PCL_Segmentation_1000_fixed/train --feature_dim 768"
         },
         {
             "name": "Train NDT-Net++",
