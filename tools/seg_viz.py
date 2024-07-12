@@ -10,9 +10,41 @@ from ndtnetpp.models.ndtnet import NDTNetSegmentation
 from ndtnetpp.models.pointnet import PointNetSegmentation
 from ndtnetpp.preprocessing.ndtnet_preprocessing import ndt_preprocessing
 
-VIZ_SAMPLE = 1
+VIZ_SAMPLE = 0
 
 def paint_class(pcd: np.ndarray, classes: np.ndarray, num_classes: int = 29) -> o3d.geometry.PointCloud:
+
+    colors = [
+        [1, 0, 0], # red
+        [0, 1, 0], # green
+        [0, 0, 1], # blue
+        [1, 1, 0], # yellow
+        [1, 0, 1], # magenta
+        [0, 1, 1], # cyan
+        [1, 0.5, 0], # orange
+        [1, 0, 0.5], # pink
+        [0.5, 1, 0], # lime
+        [0, 1, 0.5], # mint
+        [0.5, 0, 1], # purple
+        [0, 0.5, 1], # sky
+        [0.5, 1, 1], # turquoise
+        [1, 0.5, 1], # rose
+        [1, 1, 0.5], # banana
+        [0.5, 0, 0], # maroon
+        [0, 0.5, 0], # olive
+        [0, 0, 0.5], # navy
+        [0.5, 0.5, 0], # brown
+        [0.5, 0, 0.5], # purple
+        [0, 0.5, 0.5], # teal
+        [0.5, 0.5, 1], # lavender
+        [0.5, 1, 0.5], # mint
+        [1, 0.5, 0.5], # pink
+        [0.5, 0, 0.5], # purple
+        [0.5, 0.5, 0.5], # gray
+        [0.25, 0.25, 0], # olive
+        [0, 0.25, 0.25], # navy
+        [0.25, 0, 0.25], # purple
+    ]
 
     # create a point cloud object
     pcd_obj = o3d.geometry.PointCloud()
@@ -23,16 +55,18 @@ def paint_class(pcd: np.ndarray, classes: np.ndarray, num_classes: int = 29) -> 
         # get the class
         class_ = classes[i]
 
+        """
         # get the color. distribute colors evenly across the spectrum in 3 bytes (RGB)
         color = int(2**24 / (num_classes - class_))
         # print(f"Color {color} for class {class_}")
         r = int(color & (0xFF << 16)) / 255.0
         g = int(color & (0xFF << 8)) / 255.0
         b = int(color & 0xFF) / 255.0
+        """
 
         # create the point and color
         pcd_obj.points.append(pcd[i])
-        pcd_obj.colors.append([r, g, b])
+        pcd_obj.colors.append(colors[class_])
 
     return pcd_obj
 
@@ -50,7 +84,6 @@ if __name__ == '__main__':
 
     # get the device 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    torch.set_default_device(device)
 
     # create the dataset
     print("Creating the dataset...", end=" ")
@@ -81,6 +114,8 @@ if __name__ == '__main__':
         
         for i, (pcl, gt) in enumerate(dataloader):
 
+            print(i)
+
             if i == VIZ_SAMPLE:
 
                 # transfer the tensors to the device
@@ -101,8 +136,8 @@ if __name__ == '__main__':
                 pred_classes = torch.argmax(pred, dim=2)
 
                 # convert to numpy arrays
-                points_np = np.asarray(pcl)
-                pred_classes_np = np.asarray(pred_classes)
+                points_np = np.asarray(pcl.squeeze().cpu())
+                pred_classes_np = np.asarray(pred_classes.squeeze().cpu())
 
                 # create the open3d point cloud object
                 pcd_obj = paint_class(points_np, pred_classes_np, int(args.n_classes))
@@ -113,4 +148,6 @@ if __name__ == '__main__':
                 vis.add_geometry(pcd_obj)
                 vis.run()
                 vis.destroy_window()
+
+                break
                 

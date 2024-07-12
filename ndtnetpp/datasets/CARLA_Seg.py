@@ -28,6 +28,8 @@ class CARLA_Seg(Dataset):
         
         # get the list of files in the dataset
         self.filenames: List[str] = os.listdir(self.path)
+        # sort the filenames
+        self.filenames.sort()
         
 
     def __len__(self) -> int:

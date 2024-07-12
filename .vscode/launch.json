@@ -26,7 +26,7 @@
             "request": "launch",
             "program": "tools/seg_viz.py",
             "console": "integratedTerminal",
-            "args": "--n_desired_nds 1000 --n_samples 2000 --data_path /data/PCL_Segmentation_1000_fixed/train --weights_path /data/weights/point_cloud/ndtnet_segmentation_full_92.pth --feature_dim 768"
+            "args": "--n_desired_nds 1000 --n_samples 60000 --data_path /home/lei_proj_inf/Documents/data/PCL_Segmentation_1000_fixed/train --weights_path /home/lei_proj_inf/Documents/data/weights/ndtnet_segmentation_full_92.pth --feature_dim 1024"
         },
         {
             "name": "Train NDT-Net++",
