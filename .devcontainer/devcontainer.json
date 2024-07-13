@@ -1,0 +1,28 @@
+{
+    "name": "NDT-Net",
+    "build": {
+        "context": "..",
+        "dockerfile": "../Dockerfile"
+    },
+
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+    "workspaceFolder": "/workspace",
+
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-azuretools.vscode-docker",
+                "ms-python.python",
+                "ms-vscode.cmake-tools"
+            ]
+        }
+    },
+
+    "runArgs": [
+        "--gpus", "all"
+    ],
+
+    "mounts": [
+        /*"source=/media/multitudinous/WD_BLACK,target=/data,type=bind"*/
+    ]
+}
