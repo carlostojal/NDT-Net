@@ -37,6 +37,7 @@ def run_one_epoch(model: torch.nn.Module, optimizer: torch.optim.Optimizer, load
         model.eval()
 
     curr_sample = 0
+    loss = 0.0
     acc = 0.0
     total_acc = 0.0
     total_loss = 0.0
@@ -73,6 +74,7 @@ def run_one_epoch(model: torch.nn.Module, optimizer: torch.optim.Optimizer, load
         # backward pass
         optimizer.zero_grad()
         loss.backward()
+        loss = loss.item()
         total_loss += loss.item()
 
         # update the weights
@@ -85,9 +87,9 @@ def run_one_epoch(model: torch.nn.Module, optimizer: torch.optim.Optimizer, load
         total_acc += acc
 
         # log the loss
-        print(f"\r{mode} sample ({curr_sample}/{len(loader)*int(args.batch_size)}): {mode}_loss: {loss.item()}, {mode}_acc: {acc}", end="")
+        print(f"{mode} sample ({curr_sample}/{len(loader)*int(args.batch_size)}): {mode}_loss: {loss}, {mode}_acc: {acc}", end=" ")
 
-    return loss.item(), total_loss / len(loader), acc, total_acc / len(loader)
+    return loss, total_loss / len(loader), acc, total_acc / len(loader)
 
 
 if __name__ == '__main__':
@@ -113,7 +115,7 @@ if __name__ == '__main__':
 
     # get the device 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    torch.set_default_device(device)
+    # torch.set_default_device(device)
 
     # create the dataset
     print("Creating the dataset...", end=" ")
@@ -129,10 +131,10 @@ if __name__ == '__main__':
     
     # create the data loaders
     print("Creating the data loaders...", end=" ")
-    generator = torch.Generator(device=device)
-    train_loader = DataLoader(train_set, batch_size=int(args.batch_size), shuffle=True, pin_memory=True, num_workers=4, generator=generator)
-    val_loader = DataLoader(val_set, batch_size=int(args.batch_size), shuffle=True, pin_memory=True, num_workers=4, generator=generator)
-    test_loader = DataLoader(test_set, batch_size=int(args.batch_size), shuffle=True, pin_memory=True, num_workers=4, generator=generator)
+    # generator = torch.Generator(device=device)
+    train_loader = DataLoader(train_set, batch_size=int(args.batch_size), shuffle=True, pin_memory=True, num_workers=4)
+    val_loader = DataLoader(val_set, batch_size=int(args.batch_size), shuffle=True, pin_memory=True, num_workers=4)
+    test_loader = DataLoader(test_set, batch_size=int(args.batch_size), shuffle=True, pin_memory=True, num_workers=4)
     print("done.")
 
     # create the model
@@ -149,6 +151,7 @@ if __name__ == '__main__':
 
     # initialize wandb
     print("Initializing wandb...", end=" ")
+    """
     wandb.init(project="ndtnetpp",
         name=f"{args.task}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}",
         config={
@@ -161,6 +164,7 @@ if __name__ == '__main__':
             "n_samples": args.n_samples,
             "optimizer": "Adam"
     })
+    """
     print("done.")
 
     LEARNING_RATE = args.learning_rate
@@ -172,12 +176,12 @@ if __name__ == '__main__':
 
         # train
         loss, mean_loss, acc, mean_acc = run_one_epoch(model, optimizer, train_loader, device, args, epoch, mode="train")
-        wandb.log({"train_loss": loss, "train_loss_mean": mean_loss, "train_acc": acc, "train_acc_mean": mean_acc, "epoch": epoch+1})
+        # wandb.log({"train_loss": loss, "train_loss_mean": mean_loss, "train_acc": acc, "train_acc_mean": mean_acc, "epoch": epoch+1})
         print()
 
         # validation
         loss, mean_loss, acc, mean_acc = run_one_epoch(model, optimizer, val_loader, device, args, epoch, mode="val")
-        wandb.log({"val_loss": loss, "val_loss_mean": mean_loss, "val_acc": acc, "val_acc_mean": mean_acc, "epoch": epoch+1})
+        # wandb.log({"val_loss": loss, "val_loss_mean": mean_loss, "val_acc": acc, "val_acc_mean": mean_acc, "epoch": epoch+1})
         print()
 
         # save every "save_every" epochs
@@ -195,7 +199,7 @@ if __name__ == '__main__':
 
     # test
     loss, mean_loss, acc, mean_acc = run_one_epoch(model, optimizer, test_loader, device, args, epoch, mode="test")
-    wandb.log({"test_loss": loss, "test_loss_mean": mean_loss, "test_acc": acc, "test_acc_mean": mean_acc})
+    # wandb.log({"test_loss": loss, "test_loss_mean": mean_loss, "test_acc": acc, "test_acc_mean": mean_acc})
     print()
 
     del loss, mean_loss, acc, mean_acc
