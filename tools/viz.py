@@ -8,7 +8,7 @@ import argparse
 import open3d as o3d
 import numpy as np
 import time
-from ndtnetpp.preprocessing.ndt_legacy import NDT_Sampler
+from ndnet.preprocessing.ndt_legacy import NDT_Sampler
 
 def read_pcl(file: str, header_lines: int = 10, class_pos: int = 5) -> tuple[np.ndarray,np.ndarray]:
     """

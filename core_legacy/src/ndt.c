@@ -1,4 +1,4 @@
-#include <ndtnetpp_core/ndt.h>
+#include <ndnet_core/ndt.h>
 
 /*
  MIT License

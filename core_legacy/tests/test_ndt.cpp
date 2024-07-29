@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include <ndtnetpp_core/ndt.h>
+#include <ndnet_core/ndt.h>
 #include <iostream>
 
 TEST(NDTTests, TestDownsample) {

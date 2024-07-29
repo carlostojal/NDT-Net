@@ -5,8 +5,8 @@ from typing import List
 import sys
 from argparse import ArgumentParser
 sys.path.append(".")
-from ndtnetpp.datasets.CARLA_NDT_Seg import CARLA_Seg
-from ndtnetpp.models.ndtnet import NDTNetSegmentation
+from ndnet.datasets.CARLA_NDT_Seg import CARLA_Seg
+from ndnet.models.ndtnet import NDTNetSegmentation
 
 # parse the command-line arguments
 parser = ArgumentParser()

@@ -32,8 +32,8 @@
 #include <string.h>
 #include <omp.h>
 
-#include <ndtnetpp_core/normal_distributions.h>
-#include <ndtnetpp_core/kullback_leibler.h>
+#include <ndnet_core/normal_distributions.h>
+#include <ndnet_core/kullback_leibler.h>
 
 #define DOWNSAMPLE_UPPER_THRESHOLD 0.2 // upper threshold for downsampled point cloud size
 #define MIN_POINTS_GUESS 1 // minumum number of points to guess the number of normal distributions

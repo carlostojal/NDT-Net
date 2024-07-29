@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(ndtnetpp VERSION 0.1 LANGUAGES C CXX)
+project(ndnet VERSION 0.1 LANGUAGES C CXX)
 
 # set debug mode
 set(CMAKE_BUILD_TYPE Debug)
@@ -11,7 +11,7 @@ find_package(OpenMP REQUIRED)
 find_package(GTest REQUIRED) # for testing
 
 # declare the library
-add_library(ndtnetpp
+add_library(ndnet
     SHARED
     src/normal_distributions.c
     src/kullback_leibler.c
@@ -35,9 +35,9 @@ add_executable(test_ndt_downsample
 include_directories(include ${GSL_INCLUDE_DIRS} ${OPENMP_INCLUDE_DIRS} ${GTEST_INCLUDE_DIRS})
 
 # link the GSL library
-target_link_libraries(ndtnetpp GSL::gsl GSL::gslcblas ${OPENMP_LIBRARIES})
+target_link_libraries(ndnet GSL::gsl GSL::gslcblas ${OPENMP_LIBRARIES})
 
 # link the tests executable
-target_link_libraries(tests GTest::gtest GTest::gtest_main ${OPENMP_LIBRARIES} ndtnetpp)
+target_link_libraries(tests GTest::gtest GTest::gtest_main ${OPENMP_LIBRARIES} ndnet)
 
-target_link_libraries(test_ndt_downsample ndtnetpp)
+target_link_libraries(test_ndt_downsample ndnet)

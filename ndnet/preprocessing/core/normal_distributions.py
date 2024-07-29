@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Tuple
 from threading import Thread, Lock, Condition
-from ndtnetpp.preprocessing.core.voxel import metric_to_voxel_space
+from ndnet.preprocessing.core.voxel import metric_to_voxel_space
 
 """
  MIT License

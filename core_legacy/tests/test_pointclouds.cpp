@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include <ndtnetpp_core/pointclouds.h>
+#include <ndnet_core/pointclouds.h>
 #include <iostream>
 
 TEST(PointCloudTests, TestPointCloudLimits)

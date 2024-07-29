@@ -1,4 +1,4 @@
-#include <ndtnetpp_core/voxel.h>
+#include <ndnet_core/voxel.h>
 
 /*
  MIT License

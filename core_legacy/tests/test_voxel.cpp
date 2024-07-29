@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include <ndtnetpp_core/voxel.h>
+#include <ndnet_core/voxel.h>
 
 TEST(VoxelTests, TestEstimateVoxelSize) {
     double max_x = 2.0;

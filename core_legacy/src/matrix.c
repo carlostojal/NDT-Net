@@ -1,4 +1,4 @@
-#include <ndtnetpp_core/matrix.h>
+#include <ndnet_core/matrix.h>
 
 /*
  MIT License

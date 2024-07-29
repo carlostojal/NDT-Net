@@ -8,9 +8,9 @@ import datetime
 from typing import Tuple
 from argparse import ArgumentParser
 sys.path.append(".")
-from ndtnetpp.datasets.CARLA_Seg import CARLA_Seg
-from ndtnetpp.models.ndtnet import NDTNetClassification, NDTNetSegmentation
-from ndtnetpp.preprocessing.ndtnet_preprocessing import ndt_preprocessing
+from ndnet.datasets.CARLA_Seg import CARLA_Seg
+from ndnet.models.ndtnet import NDTNetClassification, NDTNetSegmentation
+from ndnet.preprocessing.ndtnet_preprocessing import ndt_preprocessing
 
 
 def run_one_epoch(model: torch.nn.Module, optimizer: torch.optim.Optimizer, loader: DataLoader, device: torch.device, args: ArgumentParser, epoch: int, mode: str="train")-> Tuple[float, float, float, float]:
@@ -151,8 +151,7 @@ if __name__ == '__main__':
 
     # initialize wandb
     print("Initializing wandb...", end=" ")
-    """
-    wandb.init(project="ndtnetpp",
+    wandb.init(project="ndnet",
         name=f"{args.task}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}",
         config={
             "task": args.task,
@@ -164,7 +163,6 @@ if __name__ == '__main__':
             "n_samples": args.n_samples,
             "optimizer": "Adam"
     })
-    """
     print("done.")
 
     LEARNING_RATE = args.learning_rate

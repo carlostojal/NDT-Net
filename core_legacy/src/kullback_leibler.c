@@ -1,4 +1,4 @@
-#include <ndtnetpp_core/kullback_leibler.h>
+#include <ndnet_core/kullback_leibler.h>
 
 /*
  MIT License
