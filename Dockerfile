@@ -18,7 +18,7 @@ RUN apt install -y \
     libxrender-dev
 
 # install requirements
-RUN pip install wandb open3d matplotlib numpy
+RUN pip install wandb open3d optuna numpy
 
 # copy the code
 COPY . /workspace
