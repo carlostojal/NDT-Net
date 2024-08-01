@@ -18,7 +18,7 @@ RUN apt install -y \
     libxrender-dev
 
 # install requirements
-RUN pip install wandb open3d optuna numpy
+RUN pip install wandb open3d optuna trimesh numpy
 
 # copy the code
 COPY . /workspace
