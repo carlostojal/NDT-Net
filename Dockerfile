@@ -1,4 +1,4 @@
-FROM pytorch/pytorch:2.3.1-cuda12.1-cudnn8-devel
+FROM pytorch/pytorch:2.4.0-cuda12.4-cudnn9-devel
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -24,8 +24,8 @@ RUN pip install wandb open3d matplotlib numpy
 COPY . /workspace
 WORKDIR /workspace
 
-# build NDT-Net
+# build ND-Net
 WORKDIR /workspace/core_legacy/build
 RUN cmake ..
 RUN make -j8
-RUN cp ./libndtnetpp.so /usr/local/lib/libndtnetpp.so
+RUN cp ./libndnet.so /usr/local/lib/libndnet.so

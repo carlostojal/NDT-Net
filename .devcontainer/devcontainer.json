@@ -1,5 +1,5 @@
 {
-    "name": "NDT-Net",
+    "name": "ND-Net",
     "build": {
         "context": "..",
         "dockerfile": "../Dockerfile"

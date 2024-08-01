@@ -1,4 +1,4 @@
-#include <ndtnetpp_core/normal_distributions.h>
+#include <ndnet_core/normal_distributions.h>
 
 /*
  MIT License

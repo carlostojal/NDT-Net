@@ -29,7 +29,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <ndtnetpp_core/pointclouds.h>
+#include <ndnet_core/pointclouds.h>
 #include <float.h>
 
 enum direction_t {

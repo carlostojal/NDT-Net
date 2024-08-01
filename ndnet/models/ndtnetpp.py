@@ -52,7 +52,7 @@ class ResidualConnection(nn.Module):
         - torch.Tensor: the output tensor, shaped (batch_size, out_dim, num_points)
         """
 
-class NDTNetpp(nn.Module):
+class ndnet(nn.Module):
     def __init__(self, point_dim: int = 3,
                  fine_res: int = 8160, coarse_res: int = 4080, 
                  feature_dim: int = 1024) -> None:
@@ -133,7 +133,7 @@ class NDTNetpp(nn.Module):
 
         return feat, feat1
     
-class NDTNetppClassification(nn.Module):
+class ndnetClassification(nn.Module):
 
     def __init__(self, point_dim: int = 3, num_classes: int = 512, 
                  fine_res: int = 8160,
@@ -149,7 +149,7 @@ class NDTNetppClassification(nn.Module):
         self.coarse_res = coarse_res
         self.feature_dim = feature_dim
 
-        self.feature_extractor = NDTNetpp(point_dim, fine_res, coarse_res, feature_dim)
+        self.feature_extractor = ndnet(point_dim, fine_res, coarse_res, feature_dim)
 
         self.conv1 = nn.Conv1d(feature_dim, 512, 1)
         self.conv2 = nn.Conv1d(512, 256, 1)
@@ -177,7 +177,7 @@ class NDTNetppClassification(nn.Module):
 
         return x
 
-class NDTNetppSegmentation(nn.Module):
+class ndnetSegmentation(nn.Module):
 
     def __init__(self, point_dim: int = 3, 
                  num_classes: int = 16,
@@ -197,7 +197,7 @@ class NDTNetppSegmentation(nn.Module):
         self.feature_dim = feature_dim
 
         # initialize NDT-Net++ feature extractor
-        self.ndtnetpp = NDTNetpp(point_dim, fine_res, coarse_res, feature_dim)
+        self.ndnet = ndnet(point_dim, fine_res, coarse_res, feature_dim)
 
         # residual connection to upsample back to the finer resolution
         self.residual = ResidualConnection(coarse_res, fine_res)
@@ -219,7 +219,7 @@ class NDTNetppSegmentation(nn.Module):
             raise ValueError("NDT-Net++ requires two NDT samplers")
         
         # extract features. shapes [B, F, N2] and [B, F, N1]
-        x, x1 = self.ndtnetpp(points1, covariances1, sampler1, points2, covariances2, sampler2)
+        x, x1 = self.ndnet(points1, covariances1, sampler1, points2, covariances2, sampler2)
 
         # upsample the features
         x = self.residual(x) # [B, F, N1]

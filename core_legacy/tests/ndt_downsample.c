@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <ndtnetpp_core/ndt.h>
+#include <ndnet_core/ndt.h>
 
 #define NUM_POINTS 90000
 #define POINT_DIM 3

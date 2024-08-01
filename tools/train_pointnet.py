@@ -6,8 +6,8 @@ import os
 import datetime
 from argparse import ArgumentParser
 sys.path.append(".")
-from ndtnetpp.datasets.CARLA_Seg import CARLA_Seg
-from ndtnetpp.models.pointnet import PointNetClassification, PointNetSegmentation
+from ndnet.datasets.CARLA_Seg import CARLA_Seg
+from ndnet.models.pointnet import PointNetClassification, PointNetSegmentation
 
 if __name__ == '__main__':
 

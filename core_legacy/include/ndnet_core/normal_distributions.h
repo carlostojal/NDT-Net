@@ -32,9 +32,9 @@
 #include <stdbool.h>
 #include <pthread.h>
 
-#include <ndtnetpp_core/voxel.h>
-#include <ndtnetpp_core/pointclouds.h>
-#include <ndtnetpp_core/matrix.h>
+#include <ndnet_core/voxel.h>
+#include <ndnet_core/pointclouds.h>
+#include <ndnet_core/matrix.h>
 
 #define NUM_PCL_WORKERS 8 // number of workers for bulk point cloud processing tasks
 

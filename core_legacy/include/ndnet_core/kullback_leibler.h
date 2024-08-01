@@ -34,8 +34,8 @@
 #include <gsl/gsl_linalg.h>
 #include <omp.h>
 
-#include <ndtnetpp_core/voxel.h>
-#include <ndtnetpp_core/normal_distributions.h>
+#include <ndnet_core/voxel.h>
+#include <ndnet_core/normal_distributions.h>
 
 struct kl_divergence_t {
     double divergence; // divergence value

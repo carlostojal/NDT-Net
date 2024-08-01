@@ -1,4 +1,4 @@
-# NDT-Net
+# ND-Net
 PointNet-based point cloud processing neural network using NDT-based sampling and grouping.
 
 Traditionally, farthest point sampling (FPS) is used to reduce point cloud dimensionality. However, that approach leads to some degree of loss of information, becoming more noticeable with harsher downsamples.
@@ -26,11 +26,11 @@ The rest of the PointNet architecture is as defined by the original paper, with 
     - Issue the command `make`.
 
 #### Docker
-- Run the command ```docker build -t ndtnet .```.
+- Run the command ```docker build -t ndnet .```.
 
 In case you are using Visual Studio Code, a Dev Container configuration is available as well as debug configurations, allowing a simple setup and running.
 
 ## Training
 
 You can update and use the Visual Studio Code debug configuration created, or instead run the command:
-```python tools/train.py --epochs 130 --batch_size 16 --n_desired_nds 1000 --train_path /path/to/dataset/train --val_path /path/to/dataset/validation --test_path /path/to/dataset/test --out_path /path/to/out/ndtnet```
+```python tools/train.py --epochs 130 --batch_size 16 --n_desired_nds 1000 --train_path /path/to/dataset/train --val_path /path/to/dataset/validation --test_path /path/to/dataset/test --out_path /path/to/out/ndnet```

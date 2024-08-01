@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import numpy as np
 from enum import Enum
-from ndtnetpp.preprocessing.ndt_legacy import NDT_Sampler
+from ndnet.preprocessing.ndt_legacy import NDT_Sampler
 
 class TNet(nn.Module):
     """

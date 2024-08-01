@@ -6,9 +6,9 @@ import os
 import datetime
 from argparse import ArgumentParser
 sys.path.append(".")
-from ndtnetpp.datasets.CARLA_NDT_Seg import CARLA_Seg
-from ndtnetpp.models.ndtnet import NDTNetClassification, NDTNetSegmentation
-from ndtnetpp.models.ndtnetpp import NDTNetppClassification, NDTNetppSegmentation
+from ndnet.datasets.CARLA_NDT_Seg import CARLA_Seg
+from ndnet.models.ndtnet import NDTNetClassification, NDTNetSegmentation
+from ndnet.models.ndnet import ndnetClassification, ndnetSegmentation
 
 if __name__ == '__main__':
 
@@ -60,9 +60,9 @@ if __name__ == '__main__':
     # create the model
     print("Creating the model...", end=" ")
     if args.task == "classification":
-        model = NDTNetppClassification(3, 4096, 512)
+        model = ndnetClassification(3, 4096, 512)
     elif args.task == "segmentation":
-        model = NDTNetppSegmentation(3, int(args.n_classes))
+        model = ndnetSegmentation(3, int(args.n_classes))
     else:
         raise ValueError(f"Unknown task: {args.task}")
     model = model.to(device)
@@ -73,7 +73,7 @@ if __name__ == '__main__':
 
     # initialize wandb
     print("Initializing wandb...", end=" ")
-    wandb.init(project="ndtnetpp",
+    wandb.init(project="ndnet",
         name=f"multiscale_{args.task}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}",
         config={
             "task": args.task,
@@ -201,7 +201,7 @@ if __name__ == '__main__':
             if not os.path.exists(path):
                 os.makedirs(path)
             print("Saving the model...", end=" ")
-            torch.save(model.state_dict(), f"{path}/ndtnetpp_{epoch+1}.pth")
+            torch.save(model.state_dict(), f"{path}/ndnet_{epoch+1}.pth")
             print("done.")
 
     # test

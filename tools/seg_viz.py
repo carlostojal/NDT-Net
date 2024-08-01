@@ -5,10 +5,10 @@ from argparse import ArgumentParser
 import numpy as np
 import sys
 sys.path.append(".")
-from ndtnetpp.datasets.CARLA_Seg import CARLA_Seg
-from ndtnetpp.models.ndtnet import NDTNetSegmentation
-from ndtnetpp.models.pointnet import PointNetSegmentation
-from ndtnetpp.preprocessing.ndtnet_preprocessing import ndt_preprocessing
+from ndnet.datasets.CARLA_Seg import CARLA_Seg
+from ndnet.models.ndtnet import NDTNetSegmentation
+from ndnet.models.pointnet import PointNetSegmentation
+from ndnet.preprocessing.ndtnet_preprocessing import ndt_preprocessing
 
 VIZ_SAMPLE = 0
 

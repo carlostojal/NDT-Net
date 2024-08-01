@@ -1,0 +1,4 @@
+numpy==2.0.1
+wandb==0.16.6
+open3d==0.18.0
+# pytorch==2.4.0

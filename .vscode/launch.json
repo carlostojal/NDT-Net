@@ -13,7 +13,7 @@
             "args": "--batch_size 16 --train_path ../data/PCL_Segmentation_3000/train --val_path ../data/PCL_Segmentation_3000/validation --test_path ../data/PCL_Segmentation_3000/test"
         },
         {
-            "name": "Train NDT-Net",
+            "name": "Train ND-Net",
             "type": "debugpy",
             "request": "launch",
             "program": "tools/train.py",
@@ -29,15 +29,7 @@
             "args": "--n_desired_nds 1000 --n_samples 60000 --data_path /home/lei_proj_inf/Documents/data/PCL_Segmentation_1000_fixed/train --weights_path /home/lei_proj_inf/Documents/data/weights/ndtnet_segmentation_full_92.pth --feature_dim 1024"
         },
         {
-            "name": "Train NDT-Net++",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "tools/train_multiscale.py",
-            "console": "integratedTerminal",
-            "args": "--task segmentation --n_desired_nds 8160 --n_desired_nds1 4080 --train_path ../data/PCL_Segmentation_3000/train --val_path ../data/PCL_Segmentation_3000/validation --test_path ../data/PCL_Segmentation_3000/test"
-        },
-        {
-            "name": "Hyper-parameter search NDT-Net",
+            "name": "Hyper-parameter search ND-Net",
             "type": "debugpy",
             "request": "launch",
             "program": "tools/hyperparameter_search.py",
